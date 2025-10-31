@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.1-70b-versatile")  # Options: llama-3.1-70b-versatile, mixtral-8x7b-32768
+GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.1-70b-versatile")  # Default to versatile model
 
 DDI_ANALYSIS_SYSTEM_PROMPT = """You are DrugInteract AI, a specialized expert system for analyzing drug-drug interactions (DDI) and multi-drug polypharmacy risks. You provide comprehensive, structured analysis of medications.
 
