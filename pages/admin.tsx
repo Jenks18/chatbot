@@ -91,7 +91,8 @@ export default function Admin() {
   return (
     <>
       <Head>
-        <title>Admin Dashboard - ToxicoGPT</title>
+        <title>Admin Dashboard - DrugInteract AI</title>
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
       </Head>
 
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">

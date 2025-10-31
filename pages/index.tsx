@@ -25,10 +25,19 @@ export default function Home() {
     setSessionId(newSessionId);
     localStorage.setItem('toxicogpt_session', newSessionId);
 
-    // Check API health
-    apiService.checkHealth()
-      .then(() => setIsHealthy(true))
-      .catch(() => setIsHealthy(false));
+    // Check API health (with retry)
+    const checkHealth = async () => {
+      try {
+        await apiService.checkHealth();
+        setIsHealthy(true);
+      } catch (error) {
+        console.error('Health check failed:', error);
+        setIsHealthy(false);
+        // Retry after 3 seconds
+        setTimeout(checkHealth, 3000);
+      }
+    };
+    checkHealth();
   }, []);
 
   useEffect(() => {
@@ -77,10 +86,10 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>ToxicoGPT - Toxicology AI Assistant</title>
-        <meta name="description" content="Self-hosted toxicology chatbot for research and consultation" />
+        <title>DrugInteract AI - Drug Interaction Analysis</title>
+        <meta name="description" content="AI-powered drug-drug interaction analysis and polypharmacy risk assessment" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="icon" href="/favicon.ico" />
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
       </Head>
 
       <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-900">
