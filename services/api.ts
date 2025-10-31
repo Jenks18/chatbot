@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+// Use environment variable or fallback to localhost for development
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 export interface ChatMessage {
   message: string;
@@ -64,7 +65,7 @@ class ApiService {
   private baseURL: string;
 
   constructor() {
-    this.baseURL = API_URL;
+    this.baseURL = API_BASE_URL;
   }
 
   // Chat endpoints

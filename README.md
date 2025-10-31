@@ -1,163 +1,40 @@
-# Drug-Drug Interaction Analysis System (DDI-GPT)# 🧬 ToxicoGPT - Toxicology Chatbot System
+# ToxicoGPT - Drug-Drug Interaction Analysis System
 
+A self-hosted AI-powered chatbot for analyzing drug-drug interactions (DDI) with structured data output and geolocation tracking.
 
+## 🚀 Quick Deploy to Vercel
 
-🧬 **AI-Powered Drug Interaction Analysis Platform**A self-hosted, privacy-first chatbot system specialized in toxicology research and consultation.
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Jenks18/chatbot)
 
+### Prerequisites for Vercel Deployment
 
+1. **Backend API** - You'll need to deploy the FastAPI backend separately (Render, Railway, or your own server)
+2. **Environment Variable** - Set `NEXT_PUBLIC_API_URL` in Vercel to your backend URL
 
-Self-hosted system for analyzing drug-drug interactions with comprehensive pharmacological data and safety profiles.## 🚀 Quick Start
+## 🏠 Local Development
 
-
-
-## 🚀 Quick Start### Prerequisites
-
-- Docker and Docker Compose
-
-```bash- 8GB+ RAM recommended
-
-# Setup (one command)- Port 3000, 8000, 5432, 11434 available
-
+### Quick Start
+```bash
 ./setup-local.sh
-
-### Setup
-
-# Start backend
-
-./start-backend.sh1. **Clone and Configure**
-
-```bash
-
-# Start frontend (new terminal)cd /Users/iannjenga/Desktop/chatbot
-
-./start-frontend.shcp .env.example .env
-
-```# Edit .env with your preferences
-
 ```
 
-**Access:**
-
-- Chat: http://localhost:30002. **Start All Services**
-
-- Admin: http://localhost:3000/admin```bash
-
-- API Docs: http://localhost:8000/docsdocker-compose up -d
-
-```
-
-## 🌟 Features
-
-3. **Download AI Model** (first time only)
-
-- ✅ Drug-drug interaction analysis```bash
-
-- ✅ Structured data across 15+ categoriesdocker exec -it toxicology-model ollama pull llama3:8b
-
-- ✅ Side-by-side comparison tables# Or use: mistral, meditron, or other models
-
-- ✅ Geographic analytics dashboard```
-
-- ✅ Self-hosted privacy-first design
-
-- ✅ RAG support for medical literature4. **Access the Application**
-
-- **Chat Interface**: http://localhost:3000
-
-## 📋 Requirements- **Admin Dashboard**: http://localhost:3000/admin
-
+### URLs
+- **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:8000
 - **API Docs**: http://localhost:8000/docs
+- **Admin Dashboard**: http://localhost:3000/admin
 
-- Python 3.9+- **Health Check**: http://localhost:8000/health
+## ✨ Features
 
-- Node.js 18+
+- **Structured DDI Analysis**: 15+ drug categories
+- **Comparison Tables**: Side-by-side drug analysis
+- **Analytics Dashboard**: Track usage and geolocation
+- **Self-hosted**: Full control over your data
 
-- PostgreSQL 15+## 📁 Project Structure
+## ⚠️ Medical Disclaimer
 
-- Ollama (for local LLM)
+For **educational and research purposes only**. Not a substitute for professional medical advice.
 
-```
+## 📄 License
 
-## 📚 Documentationchatbot/
-
-├── frontend/          # Next.js chat UI
-
-- [Architecture](./ARCHITECTURE.md) - System design├── backend/           # FastAPI server
-
-- [Data Collection](./DATA_COLLECTION.md) - Privacy details├── data/              # Vector database & documents
-
-- [API Reference](http://localhost:8000/docs) - API documentation├── docker-compose.yml
-
-└── README.md
-
-## ⚠️ Disclaimer```
-
-
-
-**Medical Disclaimer:** For informational purposes only. Not a substitute for professional medical advice. Always consult healthcare professionals.## 🔧 Features
-
-
-
-## 📄 License- ✅ Real-time chat interface
-
-- ✅ Complete conversation logging
-
-MIT License- ✅ Admin dashboard for query analytics
-
-- ✅ Self-hosted AI model (no external APIs)
-- ✅ RAG integration for domain knowledge
-- ✅ PostgreSQL for persistent storage
-- ✅ Docker-based deployment
-
-## 🧪 Using the Toxicology Assistant
-
-The chatbot is optimized for:
-- Drug toxicity queries
-- Chemical safety information
-- Dose-response analysis
-- Toxicological pathways
-- Risk assessment guidance
-
-## 📊 Admin Dashboard
-
-View all user interactions at: http://localhost:3000/admin
-
-Default credentials (change in .env):
-- Username: `admin`
-- Password: `toxgpt_admin_2025`
-
-## 🛠️ Development
-
-### Backend Development
-```bash
-cd backend
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -r requirements.txt
-uvicorn main:app --reload
-```
-
-### Frontend Development
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-## 📈 Scaling & Deployment
-
-- For production, update passwords in `.env`
-- Use reverse proxy (nginx) for SSL
-- Consider GPU for faster model inference
-- Monitor with Prometheus/Grafana
-
-## 🔒 Security Notes
-
-- Change default passwords before deployment
-- Enable HTTPS in production
-- Restrict admin dashboard access
-- Regular database backups
-
-## 📝 License
-
-MIT License - Free for research and commercial use.
+MIT License - see `LICENSE` file for details.
