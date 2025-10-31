@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from db.database import get_db
 from schemas import ChatMessage, ChatResponse
-from services.model_service import model_service
+from services.groq_model_service import model_service
 from services.rag_service import rag_service
 from services.log_service import log_service
 from services.geo_service import geo_service

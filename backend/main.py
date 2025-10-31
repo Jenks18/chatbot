@@ -4,7 +4,7 @@ from db.database import engine, get_db
 from db.models import Base
 from routers import chat, admin
 from schemas import HealthResponse
-from services.model_service import model_service
+from services.groq_model_service import model_service
 from sqlalchemy.orm import Session
 from datetime import datetime
 import os
@@ -76,16 +76,24 @@ async def startup_event():
     print("🧬 ToxicoGPT API Starting Up")
     print("=" * 60)
     print(f"📊 Database: {os.getenv('DATABASE_URL', 'Not configured')[:50]}...")
-    print(f"🤖 Model Server: {os.getenv('MODEL_SERVER_URL', 'Not configured')}")
-    print(f"🔬 Model: {os.getenv('MODEL_NAME', 'Not configured')}")
     
-    # Check model server
-    if await model_service.check_health():
-        print("✓ Model server is reachable")
+    # Check if using Groq or Ollama
+    if os.getenv('GROQ_API_KEY'):
+        print(f"🤖 Model Provider: Groq Cloud API")
+        print(f"🔬 Model: {os.getenv('GROQ_MODEL', 'llama-3.1-70b-versatile')}")
     else:
-        print("⚠ WARNING: Model server is not reachable")
-        print("  Make sure Ollama is running and the model is downloaded:")
-        print(f"  docker exec -it toxicology-model ollama pull {os.getenv('MODEL_NAME', 'llama3:8b')}")
+        print(f"🤖 Model Server: {os.getenv('MODEL_SERVER_URL', 'Not configured')}")
+        print(f"🔬 Model: {os.getenv('MODEL_NAME', 'Not configured')}")
+    
+    # Check model service health
+    if await model_service.check_health():
+        print("✓ Model service is reachable")
+    else:
+        print("⚠ WARNING: Model service is not reachable")
+        if os.getenv('GROQ_API_KEY'):
+            print("  Check your GROQ_API_KEY in .env file")
+        else:
+            print("  Make sure Ollama is running and the model is downloaded")
     
     print("=" * 60)
     print("🚀 API is ready at http://localhost:8000")
