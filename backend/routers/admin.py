@@ -74,7 +74,7 @@ async def get_all_sessions(
     db: Session = Depends(get_db)
 ):
     """
-    Get all sessions with message counts
+    Get all sessions with message counts and metadata
     """
     sessions = db.query(SessionModel).order_by(
         desc(SessionModel.last_active)
@@ -86,15 +86,70 @@ async def get_all_sessions(
             ChatLog.session_id == session.session_id
         ).scalar()
         
+        # Get first message preview
+        first_message = db.query(ChatLog).filter(
+            ChatLog.session_id == session.session_id
+        ).order_by(ChatLog.created_at).first()
+        
         result.append({
             "session_id": session.session_id,
             "started_at": session.started_at,
             "last_active": session.last_active,
             "message_count": message_count,
-            "user_agent": session.user_agent
+            "user_agent": session.user_agent,
+            "country": session.country,
+            "city": session.city,
+            "first_message_preview": first_message.question[:100] if first_message else None
         })
     
     return result
+
+@router.get("/sessions/{session_id}/history")
+async def get_session_history(
+    session_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Get full conversation history for a specific session
+    """
+    # Get session metadata
+    session = db.query(SessionModel).filter(
+        SessionModel.session_id == session_id
+    ).first()
+    
+    if not session:
+        return {"error": "Session not found"}
+    
+    # Get all messages in chronological order
+    messages = db.query(ChatLog).filter(
+        ChatLog.session_id == session_id
+    ).order_by(ChatLog.created_at).all()
+    
+    return {
+        "session_id": session.session_id,
+        "started_at": session.started_at,
+        "last_active": session.last_active,
+        "user_agent": session.user_agent,
+        "country": session.country,
+        "city": session.city,
+        "region": session.region,
+        "timezone": session.timezone,
+        "latitude": session.latitude,
+        "longitude": session.longitude,
+        "message_count": len(messages),
+        "messages": [
+            {
+                "id": msg.id,
+                "question": msg.question,
+                "answer": msg.answer,
+                "created_at": msg.created_at,
+                "response_time_ms": msg.response_time_ms,
+                "model_used": msg.model_used,
+                "ip_address": msg.ip_address
+            }
+            for msg in messages
+        ]
+    }
 
 @router.get("/search")
 async def search_logs(

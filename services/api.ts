@@ -116,6 +116,11 @@ class ApiService {
     return response.data;
   }
 
+  async getSessionHistory(sessionId: string): Promise<any> {
+    const response = await axios.get(`${this.baseURL}/api/admin/sessions/${sessionId}/history`);
+    return response.data;
+  }
+
   async searchLogs(query: string, limit: number = 50): Promise<ChatLog[]> {
     const response = await axios.get<ChatLog[]>(`${this.baseURL}/api/admin/search`, {
       params: { query, limit },
