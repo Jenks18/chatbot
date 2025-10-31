@@ -1,0 +1,93 @@
+"""
+Sample toxicology documents for testing RAG functionality
+"""
+
+# Save this as data/papers/acetaminophen.txt
+
+ACETAMINOPHEN TOXICOLOGY
+
+Overview:
+Acetaminophen (paracetamol) is one of the most common causes of poisoning worldwide.
+In therapeutic doses, it is safe and effective. However, overdose can lead to severe
+hepatotoxicity and potentially fatal liver failure.
+
+Mechanism of Toxicity:
+- At therapeutic doses, acetaminophen is primarily metabolized by glucuronidation and
+  sulfation pathways
+- A small amount (~5-10%) is metabolized by CYP2E1 to the toxic metabolite NAPQI
+  (N-acetyl-p-benzoquinone imine)
+- In overdose, glucuronidation and sulfation pathways become saturated
+- More drug is shunted through CYP2E1, producing excess NAPQI
+- NAPQI depletes hepatic glutathione stores
+- Once glutathione is depleted, NAPQI binds to cellular proteins causing hepatocyte death
+
+Toxic Dose:
+- Adults: >7.5-10 g in single dose or >4 g/day chronic use
+- Children: >150 mg/kg in single dose
+- Risk factors: chronic alcohol use, malnutrition, certain medications (isoniazid, phenytoin)
+
+Clinical Presentation:
+Stage 1 (0-24 hours):
+- Nausea, vomiting, anorexia, pallor
+- May be asymptomatic
+
+Stage 2 (24-72 hours):
+- Right upper quadrant pain
+- Elevated liver enzymes (AST, ALT)
+- Possible elevation of bilirubin and INR
+
+Stage 3 (72-96 hours):
+- Peak hepatotoxicity
+- Jaundice, coagulopathy, encephalopathy
+- Possible acute kidney injury
+- Risk of fulminant hepatic failure
+
+Stage 4 (>5 days):
+- Recovery or death
+- If survival, liver function typically normalizes over weeks
+
+Laboratory Evaluation:
+- Acetaminophen level (4 hours post-ingestion or later)
+- Use Rumack-Matthew nomogram to assess risk
+- Liver function tests (AST, ALT, bilirubin, INR)
+- Renal function (creatinine)
+- Electrolytes, glucose
+
+Treatment:
+1. Decontamination:
+   - Activated charcoal if <1-2 hours post-ingestion
+   - Do not delay NAC for charcoal
+
+2. N-Acetylcysteine (NAC):
+   - Antidote that replenishes glutathione stores
+   - Most effective if given within 8 hours
+   - Still beneficial up to 24 hours or later in severe cases
+   
+   Oral protocol (72-hour):
+   - Loading: 140 mg/kg
+   - Maintenance: 70 mg/kg every 4 hours for 17 doses
+   
+   IV protocol (21-hour):
+   - Loading: 150 mg/kg over 1 hour
+   - Second: 50 mg/kg over 4 hours
+   - Third: 100 mg/kg over 16 hours
+
+3. Supportive care:
+   - Correct coagulopathy, hypoglycemia, electrolyte abnormalities
+   - Consider liver transplant consultation if severe hepatotoxicity
+
+Prognosis:
+- Excellent if NAC given within 8 hours
+- Mortality <0.5% with early treatment
+- Liver transplant may be needed in fulminant hepatic failure
+- King's College Criteria used to assess need for transplant
+
+Prevention:
+- Public education on safe dosing
+- Limiting package sizes in some countries
+- Combination products awareness (multiple sources of acetaminophen)
+
+References:
+- Rumack BH, Matthew H. Acetaminophen poisoning and toxicity. Pediatrics. 1975.
+- Heard KJ. Acetylcysteine for acetaminophen poisoning. N Engl J Med. 2008.
+- Larson AM, et al. Acetaminophen-induced acute liver failure. Hepatology. 2005.
