@@ -3,7 +3,6 @@ from sqlalchemy.orm import Session
 from db.database import get_db
 from schemas import ChatMessage, ChatResponse
 from services.groq_model_service import model_service
-from services.rag_service import rag_service
 from services.log_service import log_service
 from services.geo_service import geo_service
 import uuid
@@ -43,18 +42,10 @@ async def chat(
     start_time = time.time()
     
     try:
-        # Retrieve relevant context if RAG is enabled
-        context = None
-        sources = None
-        if rag_service.enabled:
-            context = rag_service.retrieve_context(message.message)
-            if context:
-                sources = ["Retrieved from indexed toxicology documents"]
-        
-        # Generate response from model
+        # Generate response from model (RAG disabled for production)
         answer = await model_service.generate_response(
             question=message.message,
-            context=context
+            context=None
         )
         
         # Calculate response time
@@ -62,7 +53,6 @@ async def chat(
         
         # Prepare metadata including geolocation
         metadata = {
-            "rag_used": context is not None,
             "geo_data": geo_data
         }
         
@@ -84,7 +74,7 @@ async def chat(
             session_id=session_id,
             model_used=model_service.model_name,
             response_time_ms=response_time_ms,
-            sources=sources
+            sources=None
         )
         
     except Exception as e:
