@@ -242,6 +242,7 @@ class DeepSeekModelService:
     async def check_health(self) -> bool:
         """Check if DeepSeek API is available"""
         if not self.enabled:
+            print("[DeepSeek Health Check] FAILED: No DEEPSEEK_API_KEY environment variable")
             return False
         try:
             async with httpx.AsyncClient(timeout=5.0) as client:
@@ -249,8 +250,14 @@ class DeepSeekModelService:
                     f"{self.base_url}/models",
                     headers={"Authorization": f"Bearer {self.api_key}"}
                 )
-                return response.status_code == 200
-        except:
+                if response.status_code == 200:
+                    print("[DeepSeek Health Check] ✓ API is accessible")
+                    return True
+                else:
+                    print(f"[DeepSeek Health Check] FAILED: API returned {response.status_code}")
+                    return False
+        except Exception as e:
+            print(f"[DeepSeek Health Check] FAILED: {str(e)}")
             return False
 
 

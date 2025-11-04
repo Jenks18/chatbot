@@ -61,14 +61,25 @@ async def health_check():
         db_status = f"unhealthy: {str(e)}"
     
     # Check model server
-    model_status = "healthy" if await model_service.check_health() else "unhealthy"
+    try:
+        model_status = await model_service.check_health()
+        if model_status:
+            model_status_str = "healthy"
+        else:
+            # Check if API key is missing
+            if not model_service.enabled:
+                model_status_str = "unhealthy: DEEPSEEK_API_KEY not configured"
+            else:
+                model_status_str = "unhealthy: DeepSeek API unreachable"
+    except Exception as e:
+        model_status_str = f"unhealthy: {str(e)}"
     
-    overall_status = "healthy" if db_status == "healthy" and model_status == "healthy" else "degraded"
+    overall_status = "healthy" if db_status == "healthy" and model_status_str == "healthy" else "degraded"
     
     return HealthResponse(
         status=overall_status,
         database=db_status,
-        model_server=model_status,
+        model_server=model_status_str,
         timestamp=datetime.utcnow()
     )
 
