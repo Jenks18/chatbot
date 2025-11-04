@@ -35,7 +35,7 @@ const parseCitations = (text: string): { cleanText: string; citations: string[] 
 export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
   const isUser = message.role === 'user';
   const [viewMode, setViewMode] = React.useState<'simple' | 'technical'>('simple');
-  const [showReferences, setShowReferences] = React.useState(false);
+  const [showReferences, setShowReferences] = React.useState(true); // Changed to true by default
 
   const formatContent = (s: string) => {
     if (!s) return [];

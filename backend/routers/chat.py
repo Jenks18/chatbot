@@ -82,6 +82,34 @@ async def chat(
             })
         # attach to metadata for logging
         metadata["evidence"] = evidence_serializable
+        
+        # Add citation numbers to the answer if we have evidence
+        answer_with_citations = answer
+        if evidence_serializable:
+            # Add citation at the end of relevant sentences
+            citation_num = 1
+            for ev in evidence_serializable:
+                drug_name = ev.get('drug_name', '')
+                if drug_name and drug_name.lower() in answer.lower():
+                    # Add citation after mentions of the drug
+                    pattern = re.compile(r'\b' + re.escape(drug_name) + r'\b', re.IGNORECASE)
+                    # Only add citation to first occurrence
+                    answer_with_citations = pattern.sub(f'{drug_name} [{citation_num}]', answer_with_citations, count=1)
+                    citation_num += 1
+            
+            # If no drug names matched, add citations at paragraph ends
+            if '[' not in answer_with_citations and evidence_serializable:
+                paragraphs = answer_with_citations.split('\n\n')
+                cited_paragraphs = []
+                for i, para in enumerate(paragraphs):
+                    if i < len(evidence_serializable) and para.strip():
+                        # Add citation at end of paragraph
+                        para = para.rstrip('.') + f' [{i+1}].'
+                    cited_paragraphs.append(para)
+                answer_with_citations = '\n\n'.join(cited_paragraphs)
+        
+        # Use the answer with citations for the main response
+        answer = answer_with_citations
 
         # If no DB evidence found, try to extract any URLs or markdown links from the model answer
         # and present them as an unverified reference block so the frontend can show clickable links.
@@ -167,6 +195,24 @@ async def chat(
                         consumer_summary = model_summary
                         consumer_summary_source = 'model'
                         consumer_summary_evidence_ids = []
+                
+                # Add citations to consumer summary if we have evidence
+                if consumer_summary and evidence_serializable:
+                    citation_num = 1
+                    for ev in evidence_serializable:
+                        drug_name = ev.get('drug_name', '')
+                        if drug_name and drug_name.lower() in consumer_summary.lower():
+                            pattern = re.compile(r'\b' + re.escape(drug_name) + r'\b', re.IGNORECASE)
+                            consumer_summary = pattern.sub(f'{drug_name} [{citation_num}]', consumer_summary, count=1)
+                            citation_num += 1
+                    
+                    # If no matches, add citation at end of first paragraph
+                    if '[' not in consumer_summary and evidence_serializable:
+                        sentences = consumer_summary.split('. ')
+                        if sentences:
+                            sentences[0] = sentences[0].rstrip('.') + ' [1].'
+                            consumer_summary = '. '.join(sentences)
+                            
             except Exception:
                 # leave consumer_summary for DB-only fallback below
                 consumer_summary = ""
