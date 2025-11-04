@@ -61,3 +61,14 @@ class Reference(Base):
     excerpt = Column(Text, nullable=True)
 
     interaction = relationship("Interaction", backref="references")
+
+
+class APICache(Base):
+    __tablename__ = "api_cache"
+
+    id = Column(Integer, primary_key=True, index=True)
+    cache_key = Column(String(255), unique=True, nullable=False, index=True)
+    api_source = Column(String(50), nullable=False)  # rxnorm, fda, pubchem, etc.
+    response_data = Column(JSON, nullable=False)  # Cached API response
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    expires_at = Column(DateTime(timezone=True), nullable=False, index=True)

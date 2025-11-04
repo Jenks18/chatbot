@@ -6,9 +6,11 @@ from services.groq_model_service import model_service
 from services.log_service import log_service
 from services.geo_service import geo_service
 from services.interaction_service import interaction_service, build_consumer_summary_from_evidence
+from services.data_aggregator_service import DrugDataAggregator, extract_drug_names
 import uuid
 import time
 import re
+import json
 
 router = APIRouter()
 
@@ -47,10 +49,48 @@ async def chat(
         # Get user mode from message (defaults to 'patient' if not specified)
         user_mode = getattr(message, 'user_mode', 'patient') or 'patient'
         
-        # Generate response from model (RAG disabled for production) with user mode
+        # Initialize data aggregator
+        aggregator = DrugDataAggregator(db)
+        
+        # Extract potential drug names from the query
+        drug_names = extract_drug_names(message.message)
+        
+        # Build context from external APIs if drugs are mentioned
+        external_context = None
+        if drug_names:
+            print(f"[Chat] Detected drugs: {drug_names}")
+            
+            # Fetch comprehensive data for all drugs
+            drugs_data = await aggregator.get_multiple_drugs_data(drug_names)
+            
+            # Format the aggregated data for the LLM context
+            context_parts = []
+            for drug_data in drugs_data:
+                if isinstance(drug_data, dict) and not drug_data.get("error"):
+                    context_parts.append(f"""
+Drug: {drug_data.get('drug_name', 'Unknown')}
+
+Identifiers: {json.dumps(drug_data.get('identifiers', {}), indent=2)}
+
+FDA Label Info: {json.dumps(drug_data.get('fda_label', {}), indent=2)}
+
+Chemical Data: {json.dumps(drug_data.get('chemical_data', {}), indent=2)}
+
+Known Interactions: {json.dumps(drug_data.get('interactions', []), indent=2)}
+
+Adverse Events (OpenFDA): {json.dumps(drug_data.get('adverse_events', [])[:10], indent=2)}
+
+Recent Literature: {json.dumps(drug_data.get('literature', []), indent=2)}
+""")
+            
+            if context_parts:
+                external_context = "\n\n=== COMPREHENSIVE DRUG DATABASE ===\n" + "\n---\n".join(context_parts)
+                print(f"[Chat] Built context from {len(context_parts)} drug(s), {len(external_context)} characters")
+        
+        # Generate response from model with external context and user mode
         answer = await model_service.generate_response(
             question=message.message,
-            context=None,
+            context=external_context,
             user_mode=user_mode
         )
 
