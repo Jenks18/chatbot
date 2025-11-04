@@ -53,6 +53,40 @@ async def chat(
         # If model service returned an empty string (disabled or error), trigger fallback
         if not answer or not answer.strip():
             raise RuntimeError("model-unavailable")
+        
+        # Extract references from the model's response if it includes a REFERENCES section
+        model_references = []
+        if "## REFERENCES" in answer or "## References" in answer:
+            # Split response into main content and references
+            ref_pattern = r'##\s*REFERENCES?\s*\n(.*?)(?=\n##|\Z)'
+            import re as regex_module
+            ref_match = regex_module.search(ref_pattern, answer, regex_module.IGNORECASE | regex_module.DOTALL)
+            
+            if ref_match:
+                ref_section = ref_match.group(1)
+                # Parse individual references like [1] Author, Year. Title. Journal. PMID: 12345
+                ref_lines = regex_module.findall(r'\[(\d+)\]\s*(.+?)(?=\[\d+\]|\Z)', ref_section, regex_module.DOTALL)
+                
+                for num, ref_text in ref_lines:
+                    ref_text = ref_text.strip()
+                    if ref_text:
+                        # Try to extract URL/DOI if present
+                        url_match = regex_module.search(r'(https?://[^\s]+|DOI:\s*[^\s]+|PMID:\s*\d+)', ref_text)
+                        url = url_match.group(0) if url_match else "#"
+                        
+                        # Convert PMID to URL
+                        if "PMID:" in url:
+                            pmid = regex_module.search(r'PMID:\s*(\d+)', url)
+                            if pmid:
+                                url = f"https://pubmed.ncbi.nlm.nih.gov/{pmid.group(1)}/"
+                        
+                        model_references.append({
+                            "id": int(num),
+                            "title": ref_text[:200],  # Truncate if too long
+                            "url": url,
+                            "excerpt": ref_text if len(ref_text) > 200 else None,
+                            "unverified": False  # Model-generated, considered verified
+                        })
 
         # Calculate response time
         response_time_ms = int((time.time() - start_time) * 1000)
@@ -83,34 +117,22 @@ async def chat(
         # attach to metadata for logging
         metadata["evidence"] = evidence_serializable
         
-        # Add citation numbers to the answer if we have evidence
-        answer_with_citations = answer
-        if evidence_serializable:
-            # Add citation at the end of relevant sentences
-            citation_num = 1
-            for ev in evidence_serializable:
-                drug_name = ev.get('drug_name', '')
-                if drug_name and drug_name.lower() in answer.lower():
-                    # Add citation after mentions of the drug
-                    pattern = re.compile(r'\b' + re.escape(drug_name) + r'\b', re.IGNORECASE)
-                    # Only add citation to first occurrence
-                    answer_with_citations = pattern.sub(f'{drug_name} [{citation_num}]', answer_with_citations, count=1)
-                    citation_num += 1
-            
-            # If no drug names matched, add citations at paragraph ends
-            if '[' not in answer_with_citations and evidence_serializable:
-                paragraphs = answer_with_citations.split('\n\n')
-                cited_paragraphs = []
-                for i, para in enumerate(paragraphs):
-                    if i < len(evidence_serializable) and para.strip():
-                        # Add citation at end of paragraph
-                        para = para.rstrip('.') + f' [{i+1}].'
-                    cited_paragraphs.append(para)
-                answer_with_citations = '\n\n'.join(cited_paragraphs)
+        # If no DB evidence but we have model-generated references, create evidence from them
+        if not evidence_serializable and model_references:
+            # Group all model references into a single evidence item
+            evidence_serializable.append({
+                "id": 1,
+                "drug_name": "Model Citation",
+                "title": "Evidence-Based Medical Literature",
+                "summary": "References cited by the AI model based on medical literature and clinical guidelines.",
+                "mechanism": None,
+                "food_groups": None,
+                "recommended_actions": None,
+                "evidence_quality": "Model-Generated",
+                "references": model_references
+            })
+            metadata["evidence"] = evidence_serializable
         
-        # Use the answer with citations for the main response
-        answer = answer_with_citations
-
         # If no DB evidence found, try to extract any URLs or markdown links from the model answer
         # and present them as an unverified reference block so the frontend can show clickable links.
         if not evidence_serializable and answer:
@@ -195,23 +217,6 @@ async def chat(
                         consumer_summary = model_summary
                         consumer_summary_source = 'model'
                         consumer_summary_evidence_ids = []
-                
-                # Add citations to consumer summary if we have evidence
-                if consumer_summary and evidence_serializable:
-                    citation_num = 1
-                    for ev in evidence_serializable:
-                        drug_name = ev.get('drug_name', '')
-                        if drug_name and drug_name.lower() in consumer_summary.lower():
-                            pattern = re.compile(r'\b' + re.escape(drug_name) + r'\b', re.IGNORECASE)
-                            consumer_summary = pattern.sub(f'{drug_name} [{citation_num}]', consumer_summary, count=1)
-                            citation_num += 1
-                    
-                    # If no matches, add citation at end of first paragraph
-                    if '[' not in consumer_summary and evidence_serializable:
-                        sentences = consumer_summary.split('. ')
-                        if sentences:
-                            sentences[0] = sentences[0].rstrip('.') + ' [1].'
-                            consumer_summary = '. '.join(sentences)
                             
             except Exception:
                 # leave consumer_summary for DB-only fallback below

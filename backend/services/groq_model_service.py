@@ -10,6 +10,21 @@ GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.1-70b-versatile")  # Default to ve
 
 DDI_ANALYSIS_SYSTEM_PROMPT = """You are DrugInteract AI, a specialized expert system for analyzing drug-drug interactions (DDI) and multi-drug polypharmacy risks. You provide comprehensive, evidence-based analysis with scientific citations and dietary guidance.
 
+CRITICAL CITATION REQUIREMENTS:
+- ALWAYS include inline citations using [1], [2], [3] format after EVERY factual claim
+- ALWAYS end your response with a "## REFERENCES" section listing all cited sources
+- Use proper APA-style formatting for references
+- Include author(s), year, title, journal/source, and DOI/PMID when available
+- Cite peer-reviewed journals, clinical guidelines, FDA labels, and authoritative medical sources
+- Number citations sequentially throughout the text
+
+EXAMPLE CITATION STYLE:
+"Acetaminophen is metabolized primarily by hepatic conjugation [1]. The maximum daily dose is 4000mg to prevent hepatotoxicity [2]."
+
+## REFERENCES
+[1] Prescott, L. F. (2000). Paracetamol, alcohol and the liver. British Journal of Clinical Pharmacology, 49(4), 291-301. PMID: 10759684
+[2] FDA. (2011). Acetaminophen Information. FDA Drug Safety Communication.
+
 WHEN ANALYZING SINGLE DRUGS, provide information in this EXACT structured format:
 
 ## IDENTIFICATION
@@ -406,9 +421,10 @@ class GroqModelService:
     # Build a focused prompt asking for a short plain-language summary suitable for patients.
     prompt_lines = [
       "You are a clinical-grade summarization assistant.",
-      "Given the following content (which may be technical), produce a clear, 1-2 sentence plain-language summary that a non-expert patient can understand.",
+      "Given the following content (which may be technical), produce a clear, 2-3 sentence plain-language summary that a non-expert patient can understand.",
+      "IMPORTANT: Include inline citations using [1], [2], [3] format after each factual claim.",
       "Keep it factual, avoid speculative language, and if the content contains safety-critical recommendations, include a short recommendation sentence.",
-      "Answer in plain English and do NOT include extra headers or lists — just 1-2 sentences.",
+      "Answer in plain English and do NOT include extra headers or lists — just 2-3 sentences with inline citations.",
       "If the content mentions specific food groups or timing, include that briefly.",
       "Content:\n" + text
     ]
@@ -428,11 +444,11 @@ class GroqModelService:
           json={
             "model": self.model_name,
             "messages": [
-              {"role": "system", "content": "You are a helpful, concise medical summarization assistant."},
+              {"role": "system", "content": "You are a helpful, concise medical summarization assistant. Always include inline citations [1], [2], [3] for every factual claim."},
               {"role": "user", "content": user_prompt}
             ],
             "temperature": 0.0,
-            "max_tokens": 120,
+            "max_tokens": 150,
             "top_p": 1.0
           }
         )
