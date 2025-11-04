@@ -4,7 +4,7 @@ from db.database import engine, get_db, DATABASE_URL as DB_URL
 from db.models import Base
 from routers import chat, admin
 from schemas import HealthResponse
-from services.groq_model_service import model_service
+from services.model_router import model_service
 from services.interaction_service import seed_default_interactions
 from sqlalchemy.orm import Session
 from datetime import datetime
