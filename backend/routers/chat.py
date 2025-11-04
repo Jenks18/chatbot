@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from db.database import get_db
 from schemas import ChatMessage, ChatResponse
-from services.groq_model_service import model_service
+from services.model_router import model_service  # Now uses MODEL_PROVIDER to switch between Groq/DeepSeek
 from services.log_service import log_service
 from services.geo_service import geo_service
 from services.interaction_service import interaction_service, build_consumer_summary_from_evidence
