@@ -7,6 +7,7 @@ from pydantic import BaseModel
 class ChatMessage(BaseModel):
     message: str = Field(..., min_length=1, max_length=5000, description="User's question")
     session_id: Optional[str] = Field(None, description="Session identifier")
+    user_mode: Optional[str] = Field('patient', description="User mode: patient, doctor, or researcher")
 
 class ChatResponse(BaseModel):
     answer: str

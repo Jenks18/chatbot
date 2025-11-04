@@ -21,6 +21,7 @@ export default function Home() {
   const [sessionId, setSessionId] = useState<string>('');
   const [isHealthy, setIsHealthy] = useState<boolean | null>(null);
   const [healthError, setHealthError] = useState<string | null>(null);
+  const [userMode, setUserMode] = useState<'patient' | 'doctor' | 'researcher'>('patient');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -116,7 +117,7 @@ export default function Home() {
     setLoading(true);
 
       try {
-      const response = await apiService.sendMessage(message, sessionId);
+      const response = await apiService.sendMessage(message, sessionId, userMode);
 
       // Add assistant response (include consumer summary when returned by backend)
       const assistantMessage: Message = {
@@ -201,7 +202,11 @@ export default function Home() {
         <main className="flex-1 overflow-y-auto bg-gradient-to-b from-transparent to-slate-950/50">
             <div className="max-w-5xl mx-auto px-6 py-8">
               {messages.length === 0 ? (
-                <WelcomeMessage onSelectCategory={(p) => handleSend(p)} />
+                <WelcomeMessage 
+                  onSelectCategory={(p) => handleSend(p)} 
+                  userMode={userMode}
+                  onModeChange={setUserMode}
+                />
               ) : (
                 <>
                   {messages.map((msg, idx) => (

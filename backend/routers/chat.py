@@ -44,10 +44,14 @@ async def chat(
     start_time = time.time()
     
     try:
-        # Generate response from model (RAG disabled for production)
+        # Get user mode from message (defaults to 'patient' if not specified)
+        user_mode = getattr(message, 'user_mode', 'patient') or 'patient'
+        
+        # Generate response from model (RAG disabled for production) with user mode
         answer = await model_service.generate_response(
             question=message.message,
-            context=None
+            context=None,
+            user_mode=user_mode
         )
 
         # If model service returned an empty string (disabled or error), trigger fallback

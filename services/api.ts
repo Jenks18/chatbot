@@ -6,6 +6,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 export interface ChatMessage {
   message: string;
   session_id?: string;
+  user_mode?: 'patient' | 'doctor' | 'researcher';
 }
 
 export interface ChatResponse {
@@ -81,10 +82,11 @@ class ApiService {
   }
 
   // Chat endpoints
-  async sendMessage(message: string, sessionId?: string): Promise<ChatResponse> {
+  async sendMessage(message: string, sessionId?: string, userMode?: 'patient' | 'doctor' | 'researcher'): Promise<ChatResponse> {
     const response = await axios.post<ChatResponse>(`${this.baseURL}/api/chat`, {
       message,
       session_id: sessionId,
+      user_mode: userMode || 'patient',
     });
     return response.data;
   }
