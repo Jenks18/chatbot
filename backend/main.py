@@ -80,23 +80,16 @@ async def startup_event():
     # Print the effective DB URL detected by the app (may differ from .env)
     print(f"📊 Database: {DB_URL[:200]}...")
     
-    # Check if using Groq or Ollama
-    if os.getenv('GROQ_API_KEY'):
-        print(f"🤖 Model Provider: Groq Cloud API")
-        print(f"🔬 Model: {os.getenv('GROQ_MODEL', 'llama-3.1-70b-versatile')}")
-    else:
-        print(f"🤖 Model Server: {os.getenv('MODEL_SERVER_URL', 'Not configured')}")
-        print(f"🔬 Model: {os.getenv('MODEL_NAME', 'Not configured')}")
+    # Using DeepSeek
+    print(f"🤖 Model Provider: DeepSeek API")
+    print(f"🔬 Model: {os.getenv('DEEPSEEK_MODEL', 'deepseek-chat')}")
     
     # Check model service health
     if await model_service.check_health():
-        print("✓ Model service is reachable")
+        print("✓ DeepSeek service is reachable")
     else:
-        print("⚠ WARNING: Model service is not reachable")
-        if os.getenv('GROQ_API_KEY'):
-            print("  Check your GROQ_API_KEY in .env file")
-        else:
-            print("  Make sure Ollama is running and the model is downloaded")
+        print("⚠ WARNING: DeepSeek service is not reachable")
+        print("  Check your DEEPSEEK_API_KEY in environment variables")
     
     print("=" * 60)
     print("🚀 API is ready at http://localhost:8000")
