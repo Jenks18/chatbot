@@ -2,15 +2,15 @@ import React from 'react';
 
 export const LoadingSpinner: React.FC = () => {
   return (
-    <div className="flex justify-start mb-4">
-      <div className="bg-slate-800 rounded-lg px-4 py-3">
-        <div className="flex items-center gap-2">
-          <div className="flex gap-1">
-            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+    <div className="flex justify-start mb-6">
+      <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl px-6 py-5 border border-slate-700">
+        <div className="flex items-center gap-3">
+          <div className="flex gap-1.5">
+            <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-bounce shadow-lg shadow-emerald-500/50" style={{ animationDelay: '0ms' }}></div>
+            <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-bounce shadow-lg shadow-emerald-500/50" style={{ animationDelay: '150ms' }}></div>
+            <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-bounce shadow-lg shadow-emerald-500/50" style={{ animationDelay: '300ms' }}></div>
           </div>
-          <span className="text-sm text-slate-400">ToxicoGPT is thinking...</span>
+          <span className="text-sm text-slate-300 font-medium">ToxicoGPT is analyzing...</span>
         </div>
       </div>
     </div>
@@ -24,17 +24,20 @@ interface ErrorMessageProps {
 
 export const ErrorMessage: React.FC<ErrorMessageProps> = ({ message, onRetry }) => {
   return (
-    <div className="bg-red-900/20 border border-red-800 rounded-lg p-4 mb-4">
-      <div className="flex items-start gap-3">
-        <span className="text-red-400 text-xl">⚠️</span>
+    <div className="bg-red-900/20 border-2 border-red-800/50 rounded-2xl p-5 mb-6 backdrop-blur-sm">
+      <div className="flex items-start gap-4">
+        <div className="flex items-center justify-center w-10 h-10 rounded-full bg-red-900/40">
+          <span className="text-red-400 text-xl">⚠️</span>
+        </div>
         <div className="flex-1">
-          <p className="text-sm text-red-300">{message}</p>
+          <h4 className="text-sm font-semibold text-red-300 mb-1">Error</h4>
+          <p className="text-sm text-red-200/90 leading-relaxed">{message}</p>
           {onRetry && (
             <button
               onClick={onRetry}
-              className="mt-2 text-sm text-red-400 hover:text-red-300 transition"
+              className="mt-3 px-4 py-2 text-sm font-semibold text-red-400 hover:text-red-300 bg-red-900/20 hover:bg-red-900/30 rounded-lg transition-all"
             >
-              Try again
+              Try again →
             </button>
           )}
         </div>
@@ -58,44 +61,47 @@ export const WelcomeMessage: React.FC<WelcomeProps> = ({ onSelectCategory }) => 
       tabIndex={onSelectCategory ? 0 : -1}
       onClick={() => send(prompt)}
       onKeyDown={(e) => { if (onSelectCategory && (e.key === 'Enter' || e.key === ' ')) send(prompt); }}
-      className={`bg-slate-800 border border-slate-700 rounded-lg p-5 shadow-sm transition ${onSelectCategory ? 'cursor-pointer hover:bg-slate-700 hover:border-emerald-500/50' : ''}`}
+      className={`group bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-slate-700 rounded-2xl p-6 shadow-lg transition-all duration-300 ${onSelectCategory ? 'cursor-pointer hover:border-emerald-500/70 hover:shadow-2xl hover:shadow-emerald-500/10 hover:scale-105' : ''}`}
     >
-      <div className="text-2xl mb-2">{emoji}</div>
-      <h3 className="font-semibold mb-1 text-slate-100">{title}</h3>
-      <p className="text-sm text-slate-400">{desc}</p>
+      <div className="text-4xl mb-4 transition-transform duration-300 group-hover:scale-110">{emoji}</div>
+      <h3 className="font-bold text-lg mb-2 text-slate-100 group-hover:text-emerald-400 transition-colors">{title}</h3>
+      <p className="text-sm text-slate-400 leading-relaxed group-hover:text-slate-300 transition-colors">{desc}</p>
     </div>
   );
 
   return (
-    <div className="text-center py-12 px-4">
-      <div className="text-6xl mb-4">🧬</div>
-      <h2 className="text-3xl font-bold text-slate-100 mb-2">
+    <div className="text-center py-16 px-6">
+      <div className="mb-6 inline-flex items-center justify-center w-24 h-24 bg-gradient-to-br from-emerald-600 to-emerald-700 rounded-3xl shadow-2xl shadow-emerald-500/20">
+        <span className="text-6xl">🧬</span>
+      </div>
+      <h2 className="text-4xl font-extrabold text-slate-100 mb-3 bg-gradient-to-r from-slate-100 to-slate-300 bg-clip-text text-transparent">
         Welcome to ToxicoGPT
       </h2>
-      <p className="text-slate-400 mb-8 max-w-2xl mx-auto">
-        Your AI-powered toxicology assistant. Ask questions about drug toxicity, chemical safety,
-        dose-response relationships, and more.
+      <p className="text-lg text-slate-400 mb-12 max-w-2xl mx-auto leading-relaxed">
+        Your AI-powered toxicology assistant. Get evidence-based answers about drug interactions,
+        chemical safety, toxicity profiles, and more.
       </p>
-      <div className="grid md:grid-cols-3 gap-4 max-w-4xl mx-auto text-left">
+      <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
         <Card
           emoji="💊"
-          title="Drug Toxicity"
-          desc="Learn about adverse effects, overdose symptoms, and safety profiles"
-          prompt={'Drug Toxicity: Learn about adverse effects, overdose symptoms, and safety profiles'}
+          title="Drug Interactions"
+          desc="Analyze drug-drug interactions, polypharmacy risks, and safety profiles with evidence-based citations"
+          prompt="Tell me about common drug interactions with acetaminophen"
         />
         <Card
           emoji="⚗️"
           title="Chemical Safety"
-          desc="Understand hazards, exposure limits, and handling procedures"
-          prompt={'Chemical Safety: Understand hazards, exposure limits, and handling procedures'}
+          desc="Understand hazards, exposure limits, handling procedures, and toxicity mechanisms"
+          prompt="What are the safety considerations for handling lead compounds?"
         />
         <Card
           emoji="📊"
-          title="Risk Assessment"
-          desc="Explore dose-response data and toxicological pathways"
-          prompt={'Risk Assessment: Explore dose-response data and toxicological pathways'}
+          title="Toxicity Analysis"
+          desc="Explore dose-response relationships, toxicological pathways, and adverse effects"
+          prompt="Explain the dose-response relationship and toxicity of acetaminophen"
         />
       </div>
     </div>
   );
 };
+;

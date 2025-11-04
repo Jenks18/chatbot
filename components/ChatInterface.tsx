@@ -1,10 +1,8 @@
 import React from 'react';
-import ReactMarkdown from 'react-markdown';
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
-  // backend may return an ISO string; accept either
   timestamp: string | Date;
   consumerSummary?: string;
   evidence?: Array<{
@@ -22,232 +20,142 @@ interface ChatMessageProps {
   message: Message;
 }
 
+const parseCitations = (text: string): { cleanText: string; citations: string[] } => {
+  const citationPattern = /\[(\d+)\]/g;
+  const citations: string[] = [];
+  let match;
+  while ((match = citationPattern.exec(text)) !== null) {
+    if (!citations.includes(match[1])) {
+      citations.push(match[1]);
+    }
+  }
+  return { cleanText: text, citations };
+};
+
 export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
   const isUser = message.role === 'user';
-  
-  // Local UI state for assistant message collapsing/expansion and refs
-  const [expanded, setExpanded] = React.useState(false);
   const [viewMode, setViewMode] = React.useState<'simple' | 'technical'>('simple');
-  const [refsOpen, setRefsOpen] = React.useState(false);
-  const refsMap = React.useRef<Record<string, HTMLDivElement | null>>({});
+  const [showReferences, setShowReferences] = React.useState(false);
 
-  const scrollToRef = (key: string) => {
-    const el = refsMap.current[key];
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  const formatContent = (s: string) => {
+    if (!s) return [];
+    const paragraphs = s.split(/\n\n+/).filter(p => p.trim());
+    return paragraphs.map(p => p.replace(/\n/g, ' ').trim());
   };
 
-  // Produce paragraph-based content preserving paragraph breaks but stripping markdown formatting
-  const cleanMarkdown = (s: string) => {
-    if (!s) return '';
-    // remove markdown headings, bold/italic, codeticks, links
-    let out = s.replace(/^#+\s*/gm, '');
-    out = out.replace(/\[(.*?)\]\((.*?)\)/g, '$1');
-    out = out.replace(/[*_`]/g, '');
-    // Preserve paragraph breaks (double newline) but collapse single newlines to spaces
-    out = out.replace(/\n{2,}/g, '\n\n'); // normalize multiple breaks to double
-    out = out.replace(/([^\n])\n([^\n])/g, '$1 $2'); // single newline becomes space
-    // collapse multiple spaces
-    out = out.replace(/[ \t]{2,}/g, ' ');
-    return out.trim();
+  const buildReferences = (): Array<{ number: number; title: string; url: string; excerpt?: string }> => {
+    if (!message.evidence || message.evidence.length === 0) return [];
+    const refs: Array<{ number: number; title: string; url: string; excerpt?: string }> = [];
+    let refNum = 1;
+    message.evidence.forEach((ev) => {
+      if (ev.references && ev.references.length > 0) {
+        ev.references.forEach((r) => {
+          refs.push({
+            number: refNum++,
+            title: r.title || r.url,
+            url: r.url,
+            excerpt: r.excerpt,
+          });
+        });
+      } else {
+        refs.push({
+          number: refNum++,
+          title: ev.title || ev.drug_name || 'Evidence',
+          url: '#',
+          excerpt: ev.summary,
+        });
+      }
+    });
+    return refs;
   };
 
-  const makeSummary = () => {
-    // Server-only: Simple view MUST use only server-provided consumerSummary. Do NOT synthesize on client.
-    if (message.consumerSummary && message.consumerSummary.trim()) {
-      return cleanMarkdown(message.consumerSummary);
-    }
-    return '';
-  };
-
-  const makeFullContent = () => {
-    // Technical view: strip markdown but preserve paragraphs
-    if (message.content && message.content.trim()) {
-      return cleanMarkdown(message.content);
-    }
-    return '';
-  };
+  const references = buildReferences();
+  const displayContent = viewMode === 'simple' ? message.consumerSummary : message.content;
+  const paragraphs = formatContent(displayContent || '');
 
   return (
-    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-6`}>
-      <div
-        className={`max-w-4xl w-full ${
-          isUser
-            ? 'bg-slate-700 text-white rounded-xl px-5 py-4 shadow-sm'
-            : 'text-slate-100'
-        }`}
-      >
-          <div className="flex items-center gap-2 mb-3">
-          <span className="text-sm font-medium text-slate-400">
-            {isUser ? '👤 You' : '🧬 ToxicoGPT'}
-          </span>
-          <span className="text-xs text-slate-500">
-            {new Date(message.timestamp).toLocaleTimeString()}
-          </span>
-        </div>
-        <div className={`${isUser ? 'text-white' : 'text-slate-100'}`}>
-          {/* Assistant message: paragraph-based with inline citations */}
-          {!isUser && (
+    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-8`}>
+      <div className={`max-w-4xl w-full ${isUser ? 'bg-gradient-to-br from-slate-700 to-slate-800 text-white rounded-2xl px-6 py-5 shadow-lg border border-slate-600' : 'bg-transparent'}`}>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className={`flex items-center justify-center w-8 h-8 rounded-full ${isUser ? 'bg-slate-600' : 'bg-emerald-600'}`}>
+              <span className="text-lg">{isUser ? '👤' : '🧬'}</span>
+            </div>
             <div>
-              {/* View mode toggle - minimal inline */}
-              <div className="mb-4 flex items-center gap-2">
-                <span className="text-xs text-slate-400">View:</span>
-                <button
-                  type="button"
-                  onClick={() => setViewMode('simple')}
-                  className={`text-xs px-3 py-1.5 rounded-md transition font-medium ${viewMode === 'simple' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
-                  aria-pressed={viewMode === 'simple'}
-                >
-                  Simple
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setViewMode('technical')}
-                  className={`text-xs px-3 py-1.5 rounded-md transition font-medium ${viewMode === 'technical' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
-                  aria-pressed={viewMode === 'technical'}
-                >
-                  Technical
-                </button>
-              </div>
-
-              {/* Paragraph-based content with inline citation numbers */}
-              <div className="prose prose-invert max-w-none">
-                {viewMode === 'simple' ? (
-                  <div>
-                    {makeSummary() ? (
-                      makeSummary().split('\n\n').map((para, idx) => (
-                        <p key={idx} className="mb-4 text-lg leading-relaxed text-slate-100">
-                          {para}
-                        </p>
-                      ))
-                    ) : (
-                      <p className="text-sm text-slate-400 italic">No short summary available. Switch to Technical to read the full response.</p>
-                    )}
-                  </div>
-                ) : (
-                  <div>
-                    {makeFullContent() ? (
-                      makeFullContent().split('\n\n').map((para, idx) => (
-                        <p key={idx} className="mb-4 text-lg leading-relaxed text-slate-100">
-                          {para}
-                        </p>
-                      ))
-                    ) : (
-                      <p className="text-sm text-slate-400 italic">No content available.</p>
-                    )}
-                  </div>
-                )}
-
-                {/* Inline citation badges (clickable, numbered like [1-2]) */}
-                {message.evidence && message.evidence.length > 0 && (
-                  <div className="mt-5 flex flex-wrap gap-2 items-center">
-                    {message.evidence.map((ev, evIdx) => (
-                      <React.Fragment key={ev.id || evIdx}>
-                        {ev.references && ev.references.map((r, rIdx) => {
-                          const citationNum = evIdx + 1;
-                          return (
-                            <button
-                              key={`cite-${evIdx}-${rIdx}`}
-                              type="button"
-                              onClick={() => setRefsOpen(true)}
-                              className="text-sm bg-slate-700 text-emerald-400 px-2.5 py-1 rounded-md hover:bg-slate-600 transition font-medium border border-slate-600"
-                              title={r.title}
-                            >
-                              [{citationNum}]
-                            </button>
-                          );
-                        })}
-                      </React.Fragment>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Minimal expand/collapse */}
-              {!expanded && (
-                <div className="mt-4">
-                  <button
-                    type="button"
-                    onClick={() => setExpanded(true)}
-                    className="text-sm text-emerald-400 hover:text-emerald-300 transition"
-                  >
-                    Show references →
+              <span className="text-sm font-semibold text-slate-200">{isUser ? 'You' : 'ToxicoGPT'}</span>
+              <span className="text-xs text-slate-400 ml-2">{new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+            </div>
+          </div>
+          {!isUser && (message.consumerSummary || message.content) && (
+            <div className="flex items-center gap-2 bg-slate-800 rounded-lg p-1">
+              <button type="button" onClick={() => setViewMode('simple')} className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${viewMode === 'simple' ? 'bg-emerald-600 text-white shadow-md' : 'bg-transparent text-slate-400 hover:text-slate-200'}`} aria-pressed={viewMode === 'simple'}>Simple</button>
+              <button type="button" onClick={() => setViewMode('technical')} className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${viewMode === 'technical' ? 'bg-emerald-600 text-white shadow-md' : 'bg-transparent text-slate-400 hover:text-slate-200'}`} aria-pressed={viewMode === 'technical'}>Technical</button>
+            </div>
+          )}
+        </div>
+        <div className={`${isUser ? 'text-slate-100' : 'reader-content'}`}>
+          {!isUser ? (
+            <div>
+              {paragraphs.length > 0 ? (
+                <div className="space-y-4">
+                  {paragraphs.map((para, idx) => {
+                    const { cleanText, citations } = parseCitations(para);
+                    return (
+                      <p key={idx} className="text-[1.0625rem] leading-relaxed text-slate-100 font-normal">
+                        {cleanText}
+                        {citations.length > 0 && citations.map((citNum) => (
+                          <sup key={citNum}>
+                            <a href={`#ref-${citNum}`} onClick={(e) => { e.preventDefault(); setShowReferences(true); setTimeout(() => { document.getElementById(`ref-${citNum}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100); }} className="citation-link">{citNum}</a>
+                          </sup>
+                        ))}
+                      </p>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-sm text-slate-400 italic">{viewMode === 'simple' ? 'No simplified summary available. Switch to Technical view for the full response.' : 'No content available.'}</p>
+              )}
+              {references.length > 0 && (
+                <div className="mt-6">
+                  <button type="button" onClick={() => setShowReferences(!showReferences)} className="flex items-center gap-2 text-sm font-semibold text-emerald-400 hover:text-emerald-300 transition-colors">
+                    <span>{showReferences ? '▼' : '►'}</span>
+                    <span>References ({references.length})</span>
                   </button>
                 </div>
               )}
+              {showReferences && references.length > 0 && (
+                <div className="references-list mt-6">
+                  <h3 className="text-lg font-bold text-slate-200 mb-4 flex items-center gap-2">
+                    <span>📚</span>
+                    <span>References</span>
+                  </h3>
+                  <div className="space-y-3">
+                    {references.map((ref, idx) => (
+                      <div key={idx} id={`ref-${ref.number}`} className="reference-item">
+                        <div className="flex items-start gap-3">
+                          <span className="reference-number">{ref.number}</span>
+                          <div className="flex-1">
+                            <div>
+                              {ref.url !== '#' ? (
+                                <a href={ref.url} target="_blank" rel="noopener noreferrer" className="reference-title">{ref.title}</a>
+                              ) : (
+                                <span className="text-slate-200 font-semibold">{ref.title}</span>
+                              )}
+                            </div>
+                            {ref.excerpt && (<p className="text-sm text-slate-400 mt-2 leading-relaxed">{ref.excerpt}</p>)}
+                            {ref.url !== '#' && (<div className="text-xs text-slate-500 mt-2 break-all">{ref.url}</div>)}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-          )}
-
-          {/* User message: simple display */}
-          {isUser && (
+          ) : (
             <div className="text-base leading-relaxed">{message.content}</div>
           )}
         </div>
-
-        {/* Expandable references section */}
-        {!isUser && expanded && message.evidence && message.evidence.length > 0 && (
-          <div className="mt-6 pt-4 border-t border-slate-700">
-            <div className="text-sm font-semibold mb-3 text-slate-300">References</div>
-            <ol className="list-decimal list-inside space-y-3 text-sm">
-              {(() => {
-                // flatten all references into a single numbered list
-                const flat: Array<{ title: string; url: string; excerpt?: string }> = [];
-                message.evidence!.forEach((ev) => {
-                  (ev.references || []).forEach((r) => {
-                    flat.push({ title: r.title || r.url, url: r.url, excerpt: r.excerpt });
-                  });
-                });
-                if (flat.length === 0) {
-                  message.evidence!.forEach((ev) => {
-                    flat.push({ title: ev.title || ev.drug_name || 'Evidence', url: '#', excerpt: ev.summary });
-                  });
-                }
-                return flat.map((r, idx) => (
-                  <li key={idx} className="text-slate-300">
-                    <div>
-                      <a href={r.url} target="_blank" rel="noreferrer" className="text-emerald-400 hover:text-emerald-300 transition">
-                        {r.title}
-                      </a>
-                    </div>
-                    {r.excerpt && (<div className="text-xs text-slate-400 mt-1">{r.excerpt}</div>)}
-                  </li>
-                ));
-              })()}
-            </ol>
-          </div>
-        )}
-
-        {/* References dialog (modal) */}
-        {refsOpen && message.evidence && message.evidence.length > 0 && (
-          <div role="dialog" aria-label="References" className="fixed right-6 bottom-6 w-96 max-h-[70vh] overflow-auto bg-slate-800 border border-slate-600 rounded-xl p-5 shadow-2xl z-50">
-            <div className="flex justify-between items-center mb-3">
-              <div className="font-semibold text-slate-100">References</div>
-              <button type="button" onClick={() => setRefsOpen(false)} aria-label="Close references" className="text-sm text-slate-400 hover:text-slate-200 transition">✕</button>
-            </div>
-            {message.provenance && message.provenance.source && (
-              <div className="text-xs text-slate-400 mb-3 pb-3 border-b border-slate-700">
-                {`Based on: ${message.provenance.source}${message.provenance.evidence_ids && message.provenance.evidence_ids.length ? ` (sources: ${message.provenance.evidence_ids.join(',')})` : ''}`}
-              </div>
-            )}
-            <div className="space-y-3 text-sm">
-              {message.evidence.map((ev, evIdx) => (
-                <div key={ev.id || evIdx} className="pb-3 border-b border-slate-700 last:border-0">
-                  <div className="font-medium text-slate-100">{ev.title || ev.drug_name}</div>
-                  <div className="text-xs text-slate-400 mt-1">{ev.summary}</div>
-                  {ev.references && (
-                    <ul className="mt-2 space-y-1 text-xs">
-                      {ev.references.map((r, rIdx) => (
-                        <li key={`ref-${evIdx}-${rIdx}`} className="flex items-start gap-2">
-                          <span className="text-emerald-400 font-mono">[{evIdx + 1}]</span>
-                          <a href={r.url} target="_blank" rel="noreferrer" className="text-emerald-400 hover:text-emerald-300 transition flex-1" onClick={() => setRefsOpen(false)}>{r.title}</a>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
@@ -260,7 +168,6 @@ interface ChatInputProps {
 
 export const ChatInput: React.FC<ChatInputProps> = ({ onSend, disabled }) => {
   const [input, setInput] = React.useState('');
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (input.trim() && !disabled) {
@@ -268,24 +175,12 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, disabled }) => {
       setInput('');
     }
   };
-
   return (
     <form onSubmit={handleSubmit} className="p-4">
-      <div className="flex gap-2">
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask a follow-up question..."
-          disabled={disabled}
-          className="flex-1 px-4 py-3 border border-slate-600 bg-slate-800 text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:opacity-50 placeholder-slate-500"
-        />
-        <button
-          type="submit"
-          disabled={disabled || !input.trim()}
-          className="px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition-colors shadow-sm"
-        >
-          ↑
+      <div className="flex gap-3">
+        <input type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Ask about drug interactions, toxicity, or chemical safety..." disabled={disabled} className="flex-1 px-5 py-4 border border-slate-600 bg-slate-700 text-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:opacity-50 placeholder-slate-400 transition-all" />
+        <button type="submit" disabled={disabled || !input.trim()} className="px-8 py-4 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-xl hover:from-emerald-700 hover:to-emerald-800 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition-all shadow-lg hover:shadow-xl disabled:hover:shadow-lg transform hover:scale-105 disabled:hover:scale-100">
+          <span className="text-xl">→</span>
         </button>
       </div>
     </form>
