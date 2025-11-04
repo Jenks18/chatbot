@@ -1,6 +1,8 @@
 from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
+from pydantic import AnyHttpUrl
+from pydantic import BaseModel
 
 class ChatMessage(BaseModel):
     message: str = Field(..., min_length=1, max_length=5000, description="User's question")
@@ -11,7 +13,15 @@ class ChatResponse(BaseModel):
     session_id: str
     model_used: str
     response_time_ms: int
+    consumer_summary: Optional[str] = None
     sources: Optional[List[str]] = None
+    evidence: Optional[List[dict]] = None
+    # Provenance for the consumer_summary: where it came from and which evidence IDs were used
+    class Provenance(BaseModel):
+        source: str
+        evidence_ids: Optional[List[int]] = None
+
+    provenance: Optional[Provenance] = None
     
     model_config = {"protected_namespaces": ()}
 
@@ -40,6 +50,27 @@ class SessionResponse(BaseModel):
     region: Optional[str] = None
     timezone: Optional[str] = None
     user_agent: Optional[str] = None
+
+
+class Reference(BaseModel):
+    id: int
+    title: str
+    url: AnyHttpUrl
+    excerpt: Optional[str] = None
+
+
+class InteractionResponse(BaseModel):
+    id: int
+    drug_name: str
+    title: Optional[str]
+    summary: str
+    mechanism: Optional[str]
+    food_groups: Optional[List[str]]
+    recommended_actions: Optional[str]
+    evidence_quality: Optional[str]
+    references: Optional[List[Reference]] = None
+
+    model_config = {"from_attributes": True}
 
 class HealthResponse(BaseModel):
     status: str

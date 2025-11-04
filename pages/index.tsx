@@ -9,6 +9,9 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  evidence?: Array<any>;
+  consumerSummary?: string;
+  provenance?: { source: string; evidence_ids?: number[] };
 }
 
 export default function Home() {
@@ -17,6 +20,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string>('');
   const [isHealthy, setIsHealthy] = useState<boolean | null>(null);
+  const [healthError, setHealthError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -26,19 +30,73 @@ export default function Home() {
     localStorage.setItem('toxicogpt_session', newSessionId);
 
     // Check API health (with retry)
-    const checkHealth = async () => {
+  const checkHealth = async () => {
       try {
-        await apiService.checkHealth();
-        setIsHealthy(true);
-      } catch (error) {
-        console.error('Health check failed:', error);
+        // First try via the frontend API service (axios)
+        const res = await apiService.checkHealth();
+        if (res?.status === 'healthy') {
+          setIsHealthy(true);
+          setHealthError(null);
+          return;
+        }
+        // If service returned but not healthy, show message
         setIsHealthy(false);
+        setHealthError(`Backend reported status: ${res?.status}`);
+      } catch (err: any) {
+        console.error('Health check failed (axios):', err?.message || err);
+        // Try a fallback fetch directly to the env-specified URL so we can capture CORS/low-level errors
+        try {
+          const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+          const r = await fetch(`${base}/health`, { method: 'GET' });
+          if (r.ok) {
+            setIsHealthy(true);
+            setHealthError(null);
+            return;
+          } else {
+            setIsHealthy(false);
+            setHealthError(`Fallback fetch failed: ${r.status} ${r.statusText}`);
+          }
+        } catch (fe: any) {
+          console.error('Health check failed (fetch):', fe?.message || fe);
+          setIsHealthy(false);
+          setHealthError(fe?.message ? String(fe.message) : 'Unknown network error');
+        }
         // Retry after 3 seconds
         setTimeout(checkHealth, 3000);
       }
     };
     checkHealth();
   }, []);
+
+  // Expose manual test function for the UI
+  const handleTestHealth = async () => {
+    setHealthError(null);
+    try {
+      const res = await apiService.checkHealth();
+      if (res?.status === 'healthy') {
+        setIsHealthy(true);
+        setHealthError('');
+        return;
+      }
+      setIsHealthy(false);
+      setHealthError(`Backend reported status: ${res?.status}`);
+    } catch (err: any) {
+      try {
+        const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const r = await fetch(`${base}/health`, { method: 'GET' });
+        if (r.ok) {
+          setIsHealthy(true);
+          setHealthError('');
+          return;
+        }
+        setIsHealthy(false);
+        setHealthError(`Fallback fetch failed: ${r.status} ${r.statusText}`);
+      } catch (fe: any) {
+        setIsHealthy(false);
+        setHealthError(fe?.message ? String(fe.message) : 'Unknown network error');
+      }
+    }
+  };
 
   useEffect(() => {
     // Auto-scroll to bottom
@@ -57,14 +115,17 @@ export default function Home() {
     setMessages((prev) => [...prev, userMessage]);
     setLoading(true);
 
-    try {
+      try {
       const response = await apiService.sendMessage(message, sessionId);
-      
-      // Add assistant response
+
+      // Add assistant response (include consumer summary when returned by backend)
       const assistantMessage: Message = {
         role: 'assistant',
         content: response.answer,
+        consumerSummary: (response as any).consumer_summary || (response as any).consumerSummary || undefined,
+        provenance: (response as any).provenance || undefined,
         timestamp: new Date(),
+        evidence: response.evidence,
       };
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (err: any) {
@@ -92,35 +153,41 @@ export default function Home() {
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
       </Head>
 
-      <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="flex flex-col h-screen bg-slate-900">
         {/* Header */}
-        <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+        <header className="bg-slate-800 border-b border-slate-700 px-6 py-4 shadow-sm">
           <div className="max-w-7xl mx-auto flex justify-between items-center">
             <div className="flex items-center gap-3">
               <span className="text-3xl">🧬</span>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">ToxicoGPT</h1>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Toxicology AI Assistant</p>
+                <h1 className="text-2xl font-bold text-slate-100">ToxicoGPT</h1>
+                <p className="text-sm text-slate-400">Toxicology AI Assistant</p>
               </div>
             </div>
             <div className="flex items-center gap-4">
               {isHealthy !== null && (
                 <div className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${isHealthy ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                  <div className={`w-2 h-2 rounded-full ${isHealthy ? 'bg-emerald-500' : 'bg-red-500'}`}></div>
+                  <span className="text-sm text-slate-400">
                     {isHealthy ? 'Online' : 'Offline'}
                   </span>
                 </div>
               )}
+              {healthError && (
+                <div className="text-xs text-red-400 ml-4">
+                  {healthError}
+                </div>
+              )}
               <button
                 onClick={handleClearChat}
-                className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                className="text-sm text-slate-400 hover:text-slate-200 transition"
               >
                 Clear Chat
               </button>
+              
               <a
                 href="/admin"
-                className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 text-sm font-medium"
+                className="px-4 py-2 bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 text-sm font-medium transition"
               >
                 Admin
               </a>
@@ -129,34 +196,34 @@ export default function Home() {
         </header>
 
         {/* Chat Area */}
-        <main className="flex-1 overflow-y-auto">
-          <div className="max-w-4xl mx-auto px-4 py-6">
-            {messages.length === 0 ? (
-              <WelcomeMessage />
-            ) : (
-              <>
-                {messages.map((msg, idx) => (
-                  <ChatMessage key={idx} message={msg} />
-                ))}
-                {loading && <LoadingSpinner />}
-                {error && <ErrorMessage message={error} onRetry={() => setError(null)} />}
-                <div ref={messagesEndRef} />
-              </>
-            )}
-          </div>
+        <main className="flex-1 overflow-y-auto bg-slate-900">
+            <div className="max-w-4xl mx-auto px-4 py-6">
+              {messages.length === 0 ? (
+                <WelcomeMessage onSelectCategory={(p) => handleSend(p)} />
+              ) : (
+                <>
+                  {messages.map((msg, idx) => (
+                    <ChatMessage key={idx} message={msg} />
+                  ))}
+                  {loading && <LoadingSpinner />}
+                  {error && <ErrorMessage message={error} onRetry={() => setError(null)} />}
+                  <div ref={messagesEndRef} />
+                </>
+              )}
+            </div>
         </main>
 
         {/* Input Area */}
-        <div className="bg-white dark:bg-gray-800">
+        <div className="bg-slate-800 border-t border-slate-700 shadow-lg">
           <div className="max-w-4xl mx-auto">
             <ChatInput onSend={handleSend} disabled={loading || !isHealthy} />
           </div>
         </div>
 
         {/* Footer */}
-        <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-6 py-3">
+        <footer className="bg-slate-800 border-t border-slate-700 px-6 py-3">
           <div className="max-w-7xl mx-auto">
-            <p className="text-xs text-center text-gray-500 dark:text-gray-400">
+            <p className="text-xs text-center text-slate-400">
               ⚠️ For educational and research purposes only. Not a substitute for professional medical advice.
             </p>
           </div>

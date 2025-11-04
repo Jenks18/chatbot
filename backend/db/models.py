@@ -1,6 +1,8 @@
 from sqlalchemy import Column, Integer, String, Text, DateTime, JSON
 from sqlalchemy.sql import func
 from db.database import Base
+from sqlalchemy import ForeignKey
+from sqlalchemy.orm import relationship
 
 class ChatLog(Base):
     __tablename__ = "chat_logs"
@@ -33,3 +35,29 @@ class Session(Base):
     started_at = Column(DateTime(timezone=True), server_default=func.now())
     last_active = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     extra_metadata = Column(JSON)  # Additional device/browser fingerprinting data
+
+
+class Interaction(Base):
+    __tablename__ = "interactions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    drug_name = Column(String(200), nullable=False, index=True)
+    title = Column(String(300), nullable=True)
+    summary = Column(Text, nullable=False)
+    mechanism = Column(Text, nullable=True)
+    food_groups = Column(JSON)  # e.g. ["leafy_greens","grapefruit"]
+    recommended_actions = Column(Text, nullable=True)
+    evidence_quality = Column(String(50), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class Reference(Base):
+    __tablename__ = "references"
+
+    id = Column(Integer, primary_key=True, index=True)
+    interaction_id = Column(Integer, ForeignKey('interactions.id'), nullable=False)
+    title = Column(String(500), nullable=False)
+    url = Column(String(1000), nullable=False)
+    excerpt = Column(Text, nullable=True)
+
+    interaction = relationship("Interaction", backref="references")

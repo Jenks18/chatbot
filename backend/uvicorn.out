@@ -1,0 +1,105 @@
+INFO:     Started server process [34671]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+🌐 CORS enabled for: ['http://localhost:3000', 'http://localhost:3001']
+============================================================
+🧬 ToxicoGPT API Starting Up
+============================================================
+📊 Database: sqlite:////Users/iannjenga/Desktop/chatbot/backend/dev-data.sqlite...
+🤖 Model Provider: Groq Cloud API
+🔬 Model: llama-3.3-70b-versatile
+✓ Model service is reachable
+============================================================
+🚀 API is ready at http://localhost:8000
+📚 API docs at http://localhost:8000/docs
+============================================================
+✓ Seeded default interaction data (if DB was empty)
+INFO:     127.0.0.1:56767 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56767 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56770 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56767 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56790 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57701 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57712 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57883 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57883 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57891 - "OPTIONS /api/chat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57891 - "POST /api/chat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57898 - "POST /api/chat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57912 - "POST /api/chat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58762 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58762 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58775 - "OPTIONS /api/chat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58775 - "POST /api/chat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58821 - "GET /api/admin/sessions?limit=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58822 - "GET /api/admin/stats/overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58821 - "GET /api/admin/sessions?limit=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58822 - "GET /api/admin/stats/overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58825 - "GET /api/admin/interactions?limit=200 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58825 - "GET /api/admin/interactions?limit=200 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58828 - "GET /api/admin/sessions/ce4ebfcc-8d29-4a64-b1f8-3ac29ecac88c/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58831 - "GET /api/admin/sessions/ce4ebfcc-8d29-4a64-b1f8-3ac29ecac88c/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58836 - "GET /api/admin/sessions/ce4ebfcc-8d29-4a64-b1f8-3ac29ecac88c/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58842 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58842 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58848 - "POST /api/chat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58866 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58866 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58900 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58900 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58938 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58938 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58962 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58962 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58976 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58976 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59272 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59272 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59285 - "OPTIONS /api/chat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59285 - "POST /api/chat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59296 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59296 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59308 - "POST /api/chat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59378 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59378 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59389 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59389 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59397 - "POST /api/chat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59412 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59434 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60176 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60179 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60200 - "OPTIONS /api/chat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60200 - "POST /api/chat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60220 - "POST /api/chat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60252 - "GET /api/admin/sessions?limit=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60254 - "GET /api/admin/stats/overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60252 - "GET /api/admin/sessions?limit=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60256 - "GET /api/admin/stats/overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60254 - "GET /api/admin/interactions?limit=200 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60254 - "GET /api/admin/interactions?limit=200 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60258 - "GET /api/admin/sessions/32a3b721-a81f-4d74-a3f8-14b486713560/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60354 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61157 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61157 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61167 - "OPTIONS /api/chat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61167 - "POST /api/chat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61171 - "POST /api/chat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62685 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62685 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62685 - "OPTIONS /api/chat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62685 - "POST /api/chat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62724 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62724 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62733 - "POST /api/chat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62740 - "POST /api/chat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63253 - "POST /api/chat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63662 - "POST /api/chat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64800 - "POST /api/chat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49209 - "POST /api/chat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49781 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49781 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49781 - "OPTIONS /api/chat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49781 - "POST /api/chat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49845 - "POST /api/chat HTTP/1.1" 200 OK

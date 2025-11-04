@@ -1,10 +1,11 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from db.database import engine, get_db
+from db.database import engine, get_db, DATABASE_URL as DB_URL
 from db.models import Base
 from routers import chat, admin
 from schemas import HealthResponse
 from services.groq_model_service import model_service
+from services.interaction_service import seed_default_interactions
 from sqlalchemy.orm import Session
 from datetime import datetime
 import os
@@ -76,7 +77,8 @@ async def startup_event():
     print("=" * 60)
     print("🧬 ToxicoGPT API Starting Up")
     print("=" * 60)
-    print(f"📊 Database: {os.getenv('DATABASE_URL', 'Not configured')[:50]}...")
+    # Print the effective DB URL detected by the app (may differ from .env)
+    print(f"📊 Database: {DB_URL[:200]}...")
     
     # Check if using Groq or Ollama
     if os.getenv('GROQ_API_KEY'):
@@ -100,6 +102,14 @@ async def startup_event():
     print("🚀 API is ready at http://localhost:8000")
     print("📚 API docs at http://localhost:8000/docs")
     print("=" * 60)
+
+    # Seed initial interactions if database empty
+    try:
+        db = next(get_db())
+        seed_default_interactions(db)
+        print("✓ Seeded default interaction data (if DB was empty)")
+    except Exception as e:
+        print(f"⚠ Could not seed interactions: {e}")
 
 if __name__ == "__main__":
     import uvicorn

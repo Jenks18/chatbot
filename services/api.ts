@@ -13,7 +13,19 @@ export interface ChatResponse {
   session_id: string;
   model_used: string;
   response_time_ms: number;
+  consumer_summary?: string;
   sources?: string[];
+  evidence?: Array<{
+    id: number;
+    drug_name: string;
+    title?: string;
+    summary: string;
+    mechanism?: string;
+    food_groups?: string[];
+    recommended_actions?: string;
+    evidence_quality?: string;
+    references?: Array<{ id: number; title: string; url: string; excerpt?: string }>;
+  }>;
 }
 
 export interface ChatLog {
@@ -111,6 +123,21 @@ class ApiService {
 
   async getAllSessions(limit: number = 50): Promise<any[]> {
     const response = await axios.get(`${this.baseURL}/api/admin/sessions`, {
+      params: { limit },
+    });
+    return response.data;
+  }
+
+  // Interaction management
+  async getInteractions(limit: number = 100): Promise<any[]> {
+    const response = await axios.get(`${this.baseURL}/api/admin/interactions`, {
+      params: { limit },
+    });
+    return response.data;
+  }
+
+  async runFetchReferences(limit: number = 100): Promise<any> {
+    const response = await axios.post(`${this.baseURL}/api/admin/pipeline/fetch-references`, null, {
       params: { limit },
     });
     return response.data;

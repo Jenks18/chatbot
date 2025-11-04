@@ -5,6 +5,8 @@ from db.database import get_db
 from db.models import ChatLog, Session as SessionModel
 from typing import List
 from schemas import ChatLogResponse
+from db.models import Reference, Interaction
+from fastapi import HTTPException
 
 router = APIRouter()
 
@@ -166,3 +168,87 @@ async def search_logs(
     ).order_by(desc(ChatLog.created_at)).limit(limit).all()
     
     return logs
+
+
+@router.get("/interactions")
+async def list_interactions(
+    limit: int = Query(100, ge=1, le=1000),
+    db: Session = Depends(get_db)
+):
+    """List stored interactions with references"""
+    inters = db.query(Interaction).limit(limit).all()
+    result = []
+    for i in inters:
+        refs = []
+        for r in getattr(i, 'references', []) or []:
+            refs.append({"id": r.id, "title": r.title, "url": r.url, "excerpt": r.excerpt})
+        result.append({
+            "id": i.id,
+            "drug_name": i.drug_name,
+            "title": i.title,
+            "summary": i.summary,
+            "mechanism": i.mechanism,
+            "food_groups": i.food_groups,
+            "recommended_actions": i.recommended_actions,
+            "evidence_quality": i.evidence_quality,
+            "references": refs
+        })
+    return result
+
+
+@router.post("/pipeline/fetch-references")
+async def fetch_references_pipeline(
+    limit: int = Query(100, ge=1, le=1000),
+    db: Session = Depends(get_db)
+):
+    """
+    Pipeline endpoint: fetch reference URLs without excerpts, extract short excerpt
+    and update the DB. Returns summary of updates.
+    """
+    refs = db.query(Reference).filter(Reference.excerpt == None).limit(limit).all()
+    if not refs:
+        return {"updated": 0, "details": []}
+
+    updated = 0
+    details = []
+
+    # Import heavy third-party libs lazily so the server can start even if they're not installed.
+    try:
+        import httpx
+    except Exception:
+        raise HTTPException(status_code=500, detail="httpx is not installed. Run 'pip install -r backend/requirements.txt' in the backend venv")
+
+    try:
+        from bs4 import BeautifulSoup
+    except Exception:
+        raise HTTPException(status_code=500, detail="beautifulsoup4 (bs4) is not installed. Run 'pip install -r backend/requirements.txt' in the backend venv")
+
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        for r in refs:
+            try:
+                resp = await client.get(r.url)
+                resp.raise_for_status()
+                html = resp.text
+                soup = BeautifulSoup(html, "html.parser")
+                # Prefer first non-empty paragraph
+                excerpt = None
+                for p in soup.find_all('p'):
+                    txt = p.get_text(strip=True)
+                    if txt and len(txt) > 50:
+                        excerpt = txt[:800]
+                        break
+                # Fallback: use body text
+                if not excerpt:
+                    body = soup.get_text(separator=' ', strip=True)
+                    excerpt = body[:800] if body else None
+
+                if excerpt:
+                    r.excerpt = excerpt
+                    db.add(r)
+                    db.commit()
+                    updated += 1
+                    details.append({"id": r.id, "url": r.url, "excerpt_len": len(excerpt)})
+            except Exception as e:
+                details.append({"id": r.id, "url": r.url, "error": str(e)})
+
+    return {"updated": updated, "details": details}

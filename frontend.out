@@ -1,0 +1,50 @@
+
+> toxicogpt-frontend@1.0.0 dev
+> next dev
+
+   ▲ Next.js 14.1.0
+   - Local:        http://localhost:3000
+   - Environments: .env
+
+ ✓ Ready in 1020ms
+ ○ Compiling /404 ...
+ ✓ Compiled /404 in 562ms (198 modules)
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ✓ Compiled / in 161ms (447 modules)
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ✓ Compiled in 196ms (443 modules)
+ ✓ Compiled in 111ms (443 modules)
+ ✓ Compiled in 140ms (443 modules)
+ ✓ Compiled in 66ms (443 modules)
+ ✓ Compiled in 140ms (443 modules)
+ ✓ Compiled in 239ms (443 modules)
+ ✓ Compiled in 64ms (443 modules)
+ ✓ Compiled in 59ms (443 modules)
+ ✓ Compiled in 161ms (443 modules)
+ ✓ Compiled in 76ms (443 modules)
+ ✓ Compiled /admin in 163ms (478 modules)
+ ✓ Compiled in 136ms (478 modules)
+ ✓ Compiled in 164ms (478 modules)
+ ✓ Compiled in 86ms (478 modules)
+ ✓ Compiled in 71ms (478 modules)
+ ✓ Compiled in 93ms (478 modules)
+ ✓ Compiled /404 in 227ms (482 modules)
+ ✓ Compiled in 181ms (478 modules)
+ ✓ Compiled in 438ms (478 modules)
+ ✓ Compiled in 133ms (478 modules)
+ ✓ Compiled in 77ms (478 modules)
+ ✓ Compiled in 107ms (478 modules)
+ ✓ Compiled in 80ms (478 modules)
+ ✓ Compiled in 115ms (478 modules)
+ ✓ Compiled in 118ms (478 modules)
+ ✓ Compiled in 130ms (478 modules)
+ ✓ Compiled in 69ms (478 modules)
+ ✓ Compiled in 179ms (478 modules)
+ ✓ Compiled in 117ms (478 modules)
+ ✓ Compiled in 83ms (478 modules)
+ ✓ Compiled in 164ms (478 modules)
+ ✓ Compiled in 81ms (478 modules)
+ ✓ Compiled in 47ms (478 modules)
+ ✓ Compiled in 60ms (398 modules)
+ ✓ Compiled in 33ms (398 modules)
+ ✓ Compiled in 120ms (478 modules)
