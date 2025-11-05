@@ -147,15 +147,19 @@ class GroqModelService:
         Returns:
             Plain-language summary
         """
-        prompt = f"""Create a brief, patient-friendly summary of this drug information.
+        if not self.client:
+            return ""
+        
+        prompt = f"""Create a brief, patient-friendly summary of this information.
 Use simple language and focus on what patients need to know.
 
-Drug: {drug_name}
+{f'Question: {question}' if question else ''}
+{f'Drug: {drug_name}' if drug_name else ''}
 
-Technical Information:
+Information:
 {technical_info}
 
-Provide a clear, concise summary in 2-3 paragraphs."""
+Provide a clear, concise summary in 2-3 sentences."""
 
         result = await self.generate_response(
             query=prompt,
@@ -166,6 +170,67 @@ Provide a clear, concise summary in 2-3 paragraphs."""
         )
         
         return result  # Already a string
+    
+    async def generate_consumer_summary_with_provenance(
+        self,
+        evidence_items: str,
+        question: str = None
+    ) -> tuple:
+        """
+        Generate a summary with provenance tracking
+        
+        Args:
+            evidence_items: Numbered evidence items
+            question: User's question
+            
+        Returns:
+            Tuple of (summary: str, evidence_indices: List[int])
+        """
+        if not self.client:
+            return "", []
+        
+        prompt_lines = [
+            "You are a clinical summarization assistant.",
+            "Given the numbered evidence items below, produce a concise 1-2 sentence plain-language summary suitable for a non-expert.",
+            "Return a JSON object ONLY with two keys: `summary` (string) and `evidence_indices` (array of integers referencing the numbered evidence items you used).",
+            "Do NOT invent facts. If you cannot create a factual summary, return {\"summary\": \"\", \"evidence_indices\": []}.",
+            "",
+            "Evidence items (numbered):",
+            evidence_items
+        ]
+        if question:
+            prompt_lines.insert(1, f"User question: {question}")
+        
+        user_prompt = "\n".join(prompt_lines)
+        
+        try:
+            completion = self.client.chat.completions.create(
+                model=self.model_name,
+                messages=[
+                    {"role": "system", "content": "You are a helpful, concise medical summarization assistant. Always return valid JSON."},
+                    {"role": "user", "content": user_prompt}
+                ],
+                temperature=0.0,
+                max_completion_tokens=200,
+                stream=False
+            )
+            
+            raw = completion.choices[0].message.content.strip()
+            
+            # Parse JSON response
+            import json
+            parsed = json.loads(raw)
+            summary = parsed.get("summary", "")
+            indices = parsed.get("evidence_indices", []) or []
+            
+            # Validate indices are integers
+            valid_indices = [int(i) for i in indices if isinstance(i, (int, float))]
+            
+            return summary, valid_indices
+            
+        except Exception as e:
+            # Return empty on error so caller can fallback
+            return "", []
     
     async def check_health(self) -> Dict[str, Any]:
         """
