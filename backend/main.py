@@ -63,14 +63,14 @@ async def health_check():
     # Check model server
     try:
         model_status = await model_service.check_health()
-        if model_status:
+        if model_status.get("status") == "healthy":
             model_status_str = "healthy"
         else:
             # Check if API key is missing
-            if not model_service.enabled:
-                model_status_str = "unhealthy: DEEPSEEK_API_KEY not configured"
+            if not model_service.api_key:
+                model_status_str = "unhealthy: GROQ_API_KEY not configured"
             else:
-                model_status_str = "unhealthy: DeepSeek API unreachable"
+                model_status_str = "unhealthy: Groq API unreachable"
     except Exception as e:
         model_status_str = f"unhealthy: {str(e)}"
     
@@ -91,16 +91,18 @@ async def startup_event():
     # Print the effective DB URL detected by the app (may differ from .env)
     print(f"📊 Database: {DB_URL[:200]}...")
     
-    # Using DeepSeek
-    print(f"🤖 Model Provider: DeepSeek API")
-    print(f"🔬 Model: {os.getenv('DEEPSEEK_MODEL', 'deepseek-chat')}")
+    # Using Groq
+    print(f"🤖 Model Provider: Groq API")
+    print(f"🔬 Model: {os.getenv('GROQ_MODEL', 'llama-3.3-70b-versatile')}")
     
     # Check model service health
-    if await model_service.check_health():
-        print("✓ DeepSeek service is reachable")
+    health_result = await model_service.check_health()
+    if health_result.get("status") == "healthy":
+        print("✓ Groq service is reachable")
     else:
-        print("⚠ WARNING: DeepSeek service is not reachable")
-        print("  Check your DEEPSEEK_API_KEY in environment variables")
+        print("⚠ WARNING: Groq service is not reachable")
+        print("  Check your GROQ_API_KEY in environment variables")
+        print(f"  Error: {health_result.get('error', 'Unknown')}")
     
     print("=" * 60)
     print("🚀 API is ready at http://localhost:8000")

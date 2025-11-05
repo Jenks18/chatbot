@@ -1,8 +1,8 @@
 """
-Model Service - Using DeepSeek API
+Model Service - Using Groq API with Llama 3.3 70B
 """
-print("[Model Service] Using DeepSeek API")
-from services.deepseek_service import deepseek_service as model_service
+print("[Model Service] Using Groq API (llama-3.3-70b-versatile)")
+from services.groq_service import groq_service as model_service
 
 # Export the active model service
 __all__ = ["model_service"]
