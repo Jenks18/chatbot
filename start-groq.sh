@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Quick Start Script for Groq Compound Model
+# Quick Start Script for Groq Compound Model (Local Development)
 
 echo "╔════════════════════════════════════════════════════════════╗"
 echo "║          🚀 GROQ COMPOUND MODEL - QUICK START              ║"
@@ -35,8 +35,9 @@ echo ""
 
 cd "$(dirname "$0")"
 
-PYTHONPATH=backend DEV_SQLITE=1 \
-./venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+# For local development, we need uvicorn
+# For Vercel deployment, it uses serverless functions (no uvicorn needed)
+cd backend && DEV_SQLITE=1 ../venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
 echo ""
 echo "Backend stopped."
