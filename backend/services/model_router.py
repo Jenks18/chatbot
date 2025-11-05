@@ -1,7 +1,7 @@
 """
-Model Service - Using Groq API with Llama 3.3 70B
+Model Service - Using Groq SDK with Compound Model
 """
-print("[Model Service] Using Groq API (llama-3.3-70b-versatile)")
+print("[Model Service] Using Groq SDK (groq/compound with tools)")
 from services.groq_service import groq_service as model_service
 
 # Export the active model service
