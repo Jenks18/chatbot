@@ -1,7 +1,213 @@
 """
-Groq Model Service - Using Compound Model
-Provides AI responses using Groq's compound model
+Groq Model Service - Using Compound Model with Official SDK
+Provides AI responses using Groq's compound model with tools (web_search, code_interpreter, visit_website)
 """
+from groq import Groq
+import os
+from typing import Dict, Any, Optional
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# Mode-specific prompts
+PATIENT_MODE_PROMPT = """You are a helpful medical assistant speaking to a patient. 
+Provide clear, simple explanations without medical jargon. Be empathetic and reassuring.
+When discussing drug information, focus on what patients need to know for safe use."""
+
+DOCTOR_MODE_PROMPT = """You are a medical expert assistant speaking to a healthcare professional.
+Provide detailed clinical information, mechanisms of action, contraindications, and drug interactions.
+Include relevant medical terminology and cite evidence when available."""
+
+RESEARCHER_MODE_PROMPT = """You are a scientific research assistant speaking to a researcher.
+Provide in-depth pharmacological information, mechanisms at molecular level, research findings,
+and detailed chemical/biological pathways. Include citations and evidence quality assessments."""
+
+
+class GroqModelService:
+    """Service for interacting with Groq API using compound model with tools"""
+    
+    def __init__(self):
+        self.api_key = os.getenv("GROQ_API_KEY")
+        self.model_name = "groq/compound"
+        
+        if not self.api_key:
+            print("⚠️  WARNING: GROQ_API_KEY not set")
+            self.client = None
+        else:
+            self.client = Groq(
+                api_key=self.api_key,
+                default_headers={
+                    "Groq-Model-Version": "latest"
+                }
+            )
+            print(f"✅ Groq API initialized: {self.model_name} (with tools enabled)")
+    
+    async def generate_response(
+        self,
+        query: str,
+        context: str = "",
+        user_mode: str = "patient",
+        max_tokens: int = 2000,
+        temperature: float = 0.7,
+        enable_tools: bool = True
+    ) -> Dict[str, Any]:
+        """
+        Generate a response using Groq compound model
+        
+        Args:
+            query: User's question
+            context: Additional context (drug data, etc.)
+            user_mode: 'patient', 'doctor', or 'researcher'
+            max_tokens: Maximum response length
+            temperature: Response creativity (0-1)
+            enable_tools: Enable web_search, code_interpreter, visit_website
+            
+        Returns:
+            Dict with 'content' and metadata
+        """
+        if not self.client:
+            return {
+                "content": "Error: GROQ_API_KEY not configured. Get your free key at https://console.groq.com/keys",
+                "error": "missing_api_key"
+            }
+        
+        # Select system prompt based on mode
+        mode_prompts = {
+            "patient": PATIENT_MODE_PROMPT,
+            "doctor": DOCTOR_MODE_PROMPT,
+            "researcher": RESEARCHER_MODE_PROMPT
+        }
+        system_prompt = mode_prompts.get(user_mode, PATIENT_MODE_PROMPT)
+        
+        # Build the full prompt
+        if context:
+            user_content = f"Context:\n{context}\n\nQuestion: {query}"
+        else:
+            user_content = query
+        
+        try:
+            # Prepare compound_custom for tools
+            compound_config = {}
+            if enable_tools:
+                compound_config = {
+                    "tools": {
+                        "enabled_tools": ["web_search", "code_interpreter", "visit_website"]
+                    }
+                }
+            
+            # Make the API call (streaming)
+            completion = self.client.chat.completions.create(
+                model=self.model_name,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_content}
+                ],
+                temperature=temperature,
+                max_completion_tokens=max_tokens,
+                top_p=1,
+                stream=True,
+                stop=None,
+                compound_custom=compound_config if compound_config else None
+            )
+            
+            # Collect streamed response
+            full_content = ""
+            for chunk in completion:
+                if chunk.choices[0].delta.content:
+                    full_content += chunk.choices[0].delta.content
+            
+            return {
+                "content": full_content,
+                "model": self.model_name,
+                "tools_enabled": enable_tools
+            }
+                    
+        except Exception as e:
+            error_msg = str(e)
+            return {
+                "content": f"API error: {error_msg}",
+                "error": "exception",
+                "exception": error_msg
+            }
+    
+    async def generate_consumer_summary(
+        self,
+        technical_info: str,
+        drug_name: str = ""
+    ) -> str:
+        """
+        Generate a patient-friendly summary from technical information
+        
+        Args:
+            technical_info: Technical drug information
+            drug_name: Name of the drug
+            
+        Returns:
+            Plain-language summary
+        """
+        prompt = f"""Create a brief, patient-friendly summary of this drug information.
+Use simple language and focus on what patients need to know.
+
+Drug: {drug_name}
+
+Technical Information:
+{technical_info}
+
+Provide a clear, concise summary in 2-3 paragraphs."""
+
+        result = await self.generate_response(
+            query=prompt,
+            user_mode="patient",
+            max_tokens=500,
+            temperature=0.5,
+            enable_tools=False  # Don't need tools for summaries
+        )
+        
+        return result.get("content", "")
+    
+    async def check_health(self) -> Dict[str, Any]:
+        """
+        Check if Groq API is accessible
+        
+        Returns:
+            Dict with health status
+        """
+        if not self.client:
+            return {
+                "status": "unhealthy",
+                "error": "GROQ_API_KEY not configured",
+                "details": "Get your free API key at https://console.groq.com/keys"
+            }
+        
+        try:
+            # Simple test request
+            completion = self.client.chat.completions.create(
+                model=self.model_name,
+                messages=[{"role": "user", "content": "test"}],
+                max_completion_tokens=5,
+                stream=False
+            )
+            
+            print("[Groq Health Check] ✓ API is accessible")
+            return {
+                "status": "healthy",
+                "model": self.model_name,
+                "tools": ["web_search", "code_interpreter", "visit_website"]
+            }
+                    
+        except Exception as e:
+            error_msg = str(e)
+            print(f"[Groq Health Check] ✗ API error: {error_msg}")
+            return {
+                "status": "unhealthy",
+                "error": error_msg,
+                "details": "Cannot connect to Groq API"
+            }
+
+
+# Create singleton instance
+groq_service = GroqModelService()
+
 import httpx
 import os
 import json
