@@ -4,9 +4,11 @@ Provides AI responses using Groq's compound model with tools (web_search, code_i
 """
 from groq import Groq
 import os
+import asyncio
 from typing import Dict, Any, Optional
 from dotenv import load_dotenv
 from pathlib import Path
+from functools import partial
 
 # Load .env from backend directory
 backend_dir = Path(__file__).parent.parent
@@ -103,19 +105,24 @@ class GroqModelService:
                     }
                 }
             
-            # Make the API call (streaming)
-            completion = self.client.chat.completions.create(
-                model=self.model_name,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_content}
-                ],
-                temperature=temperature,
-                max_completion_tokens=max_tokens,
-                top_p=1,
-                stream=True,
-                stop=None,
-                compound_custom=compound_config if compound_config else None
+            # Run synchronous Groq API call in thread pool (SDK is not async)
+            loop = asyncio.get_event_loop()
+            completion = await loop.run_in_executor(
+                None,  # Use default executor
+                partial(
+                    self.client.chat.completions.create,
+                    model=self.model_name,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_content}
+                    ],
+                    temperature=temperature,
+                    max_completion_tokens=max_tokens,
+                    top_p=1,
+                    stream=True,
+                    stop=None,
+                    compound_custom=compound_config if compound_config else None
+                )
             )
             
             # Collect streamed response
@@ -204,15 +211,21 @@ Provide a clear, concise summary in 2-3 sentences."""
         user_prompt = "\n".join(prompt_lines)
         
         try:
-            completion = self.client.chat.completions.create(
-                model=self.model_name,
-                messages=[
-                    {"role": "system", "content": "You are a helpful, concise medical summarization assistant. Always return valid JSON."},
-                    {"role": "user", "content": user_prompt}
-                ],
-                temperature=0.0,
-                max_completion_tokens=200,
-                stream=False
+            # Run synchronous SDK call in thread pool
+            loop = asyncio.get_event_loop()
+            completion = await loop.run_in_executor(
+                None,
+                partial(
+                    self.client.chat.completions.create,
+                    model=self.model_name,
+                    messages=[
+                        {"role": "system", "content": "You are a helpful, concise medical summarization assistant. Always return valid JSON."},
+                        {"role": "user", "content": user_prompt}
+                    ],
+                    temperature=0.0,
+                    max_completion_tokens=200,
+                    stream=False
+                )
             )
             
             raw = completion.choices[0].message.content.strip()
@@ -247,12 +260,17 @@ Provide a clear, concise summary in 2-3 sentences."""
             }
         
         try:
-            # Simple test request
-            completion = self.client.chat.completions.create(
-                model=self.model_name,
-                messages=[{"role": "user", "content": "test"}],
-                max_completion_tokens=5,
-                stream=False
+            # Run synchronous SDK call in thread pool
+            loop = asyncio.get_event_loop()
+            completion = await loop.run_in_executor(
+                None,
+                partial(
+                    self.client.chat.completions.create,
+                    model=self.model_name,
+                    messages=[{"role": "user", "content": "test"}],
+                    max_completion_tokens=5,
+                    stream=False
+                )
             )
             
             print("[Groq Health Check] ✓ API is accessible")
