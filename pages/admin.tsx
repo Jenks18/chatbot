@@ -47,13 +47,19 @@ export default function Admin() {
   const [interactions, setInteractions] = useState<any[]>([]);
   const [pipelineResult, setPipelineResult] = useState<any | null>(null);
   const [activeTab, setActiveTab] = useState<'sessions' | 'stats'>('sessions');
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     loadData();
+    // Auto-refresh every 10 seconds
+    const interval = setInterval(() => {
+      loadData(true); // Silent refresh
+    }, 10000);
+    return () => clearInterval(interval);
   }, []);
 
-  const loadData = async () => {
-    setLoading(true);
+  const loadData = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const [sessionsData, statsData] = await Promise.all([
         apiService.getAllSessions(100),
@@ -66,8 +72,14 @@ export default function Admin() {
     } catch (error) {
       console.error('Failed to load admin data:', error);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
   };
 
   const loadInteractions = async () => {
@@ -132,13 +144,23 @@ export default function Admin() {
             </div>
             <div className="flex gap-3">
               <button
-                onClick={loadData}
-                className="px-4 py-2 bg-toxgreen-600 text-white rounded-lg hover:bg-toxgreen-700 text-sm font-medium flex items-center gap-2"
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="px-4 py-2 bg-toxgreen-600 text-white rounded-lg hover:bg-toxgreen-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium flex items-center gap-2"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                Refresh
+                {refreshing ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Refreshing...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Refresh
+                  </>
+                )}
               </button>
               <button
                 onClick={runPipeline}
@@ -187,6 +209,14 @@ export default function Admin() {
         </div>
 
         <main className="max-w-7xl mx-auto px-6 py-6">
+          <div className="mb-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+            <p className="text-sm text-blue-800 dark:text-blue-200 flex items-center gap-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Auto-refreshing every 10 seconds • Click any conversation to see full chat history
+            </p>
+          </div>
           {loading ? (
             <div className="text-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-toxgreen-600 mx-auto"></div>
