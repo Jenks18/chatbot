@@ -68,22 +68,25 @@ async def health_check():
         from sqlalchemy import text
         db = next(get_db())
         db.execute(text("SELECT 1"))
+        db.close()
     except Exception as e:
-        db_status = f"unhealthy: {str(e)}"
+        db_status = f"unhealthy: {str(e)[:100]}"
     
     # Check model server
+    model_status_str = "unknown"
     try:
-        model_status = await model_service.check_health()
-        if model_status.get("status") == "healthy":
-            model_status_str = "healthy"
+        if not model_service:
+            model_status_str = "unhealthy: model service not initialized"
+        elif not hasattr(model_service, 'api_key') or not model_service.api_key:
+            model_status_str = "unhealthy: GROQ_API_KEY not configured"
         else:
-            # Check if API key is missing
-            if not model_service.api_key:
-                model_status_str = "unhealthy: GROQ_API_KEY not configured"
+            model_status = await model_service.check_health()
+            if model_status.get("status") == "healthy":
+                model_status_str = "healthy"
             else:
                 model_status_str = "unhealthy: Groq API unreachable"
     except Exception as e:
-        model_status_str = f"unhealthy: {str(e)}"
+        model_status_str = f"unhealthy: {str(e)[:100]}"
     
     overall_status = "healthy" if db_status == "healthy" and model_status_str == "healthy" else "degraded"
     

@@ -35,7 +35,13 @@ elif env_db_url and env_db_url.startswith("sqlite"):
     engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 else:
     DATABASE_URL = env_db_url or "postgresql://toxgpt_user:toxgpt_pass_2025@localhost:5432/toxicology_gpt"
-    engine = create_engine(DATABASE_URL)
+    # Add pool_pre_ping for serverless environments to handle stale connections
+    engine = create_engine(
+        DATABASE_URL,
+        pool_pre_ping=True,
+        pool_recycle=300,
+        connect_args={"connect_timeout": 5}
+    )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
