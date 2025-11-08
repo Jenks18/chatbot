@@ -13,6 +13,29 @@ from datetime import datetime
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 os.environ['VERCEL'] = '1'
 
+# Database connection
+DATABASE_URL = os.environ.get('DATABASE_URL', 'postgresql://postgres:Kifag102o25!@db.zzeycmksnujfdvasxoti.supabase.co:5432/postgres')
+
+def log_to_database(session_id, question, answer, model_used, response_time_ms, ip_address, user_agent):
+    """Log chat interaction to database"""
+    if not DATABASE_URL:
+        return
+    try:
+        import psycopg2
+        conn = psycopg2.connect(DATABASE_URL)
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO chat_logs 
+            (session_id, question, answer, model_used, response_time_ms, ip_address, user_agent, created_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        """, (session_id, question, answer, model_used, response_time_ms, ip_address, user_agent, datetime.now()))
+        conn.commit()
+        cur.close()
+        conn.close()
+    except Exception as e:
+        print(f"Failed to log to database: {e}")
+        pass
+
 class handler(BaseHTTPRequestHandler):
     def do_POST(self):
         try:
@@ -62,6 +85,11 @@ class handler(BaseHTTPRequestHandler):
             response_time_ms = int((end_time - start_time).total_seconds() * 1000)
             
             loop.close()
+            
+            # Log to database
+            ip_address = self.headers.get('X-Forwarded-For', self.client_address[0])
+            user_agent = self.headers.get('User-Agent', '')
+            log_to_database(session_id, user_message, ai_response, "groq/compound", response_time_ms, ip_address, user_agent)
             
             # Build response
             response = {

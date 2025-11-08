@@ -8,8 +8,18 @@ import os
 from datetime import datetime, timedelta
 from urllib.parse import urlparse, parse_qs
 
-# Database connection (if available)
-DATABASE_URL = os.environ.get('DATABASE_URL')
+# Database connection
+DATABASE_URL = os.environ.get('DATABASE_URL', 'postgresql://postgres:Kifag102o25!@db.zzeycmksnujfdvasxoti.supabase.co:5432/postgres')
+
+def get_db_connection():
+    """Get database connection"""
+    if not DATABASE_URL:
+        return None
+    try:
+        import psycopg2
+        return psycopg2.connect(DATABASE_URL)
+    except:
+        return None
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -65,9 +75,43 @@ class handler(BaseHTTPRequestHandler):
         limit = int(query_params.get('limit', ['100'])[0])
         offset = int(query_params.get('offset', ['0'])[0])
         
-        # TODO: Query database when DATABASE_URL is set
-        response = []
-        self.send_json_response(response)
+        conn = get_db_connection()
+        if not conn:
+            self.send_json_response([])
+            return
+        
+        try:
+            cur = conn.cursor()
+            cur.execute("""
+                SELECT id, session_id, question, answer, model_used, 
+                       response_time_ms, ip_address, user_agent, created_at
+                FROM chat_logs 
+                ORDER BY created_at DESC 
+                LIMIT %s OFFSET %s
+            """, (limit, offset))
+            
+            rows = cur.fetchall()
+            response = []
+            for row in rows:
+                response.append({
+                    "id": row[0],
+                    "session_id": row[1],
+                    "question": row[2],
+                    "answer": row[3],
+                    "model_used": row[4],
+                    "response_time_ms": row[5],
+                    "ip_address": row[6],
+                    "user_agent": row[7],
+                    "created_at": row[8].isoformat() if row[8] else None
+                })
+            
+            cur.close()
+            conn.close()
+            self.send_json_response(response)
+        except Exception as e:
+            if conn:
+                conn.close()
+            self.send_json_response([])
     
     def handle_logs_recent(self, query_params):
         """Get recent logs (last N hours)"""
@@ -82,9 +126,46 @@ class handler(BaseHTTPRequestHandler):
         """Get all sessions"""
         limit = int(query_params.get('limit', ['50'])[0])
         
-        # TODO: Query database when DATABASE_URL is set
-        response = []
-        self.send_json_response(response)
+        conn = get_db_connection()
+        if not conn:
+            self.send_json_response([])
+            return
+        
+        try:
+            cur = conn.cursor()
+            cur.execute("""
+                SELECT 
+                    session_id,
+                    COUNT(*) as message_count,
+                    MIN(created_at) as started_at,
+                    MAX(created_at) as last_active,
+                    MAX(user_agent) as user_agent,
+                    MAX(ip_address) as ip_address
+                FROM chat_logs
+                GROUP BY session_id
+                ORDER BY last_active DESC
+                LIMIT %s
+            """, (limit,))
+            
+            rows = cur.fetchall()
+            response = []
+            for row in rows:
+                response.append({
+                    "session_id": row[0],
+                    "message_count": row[1],
+                    "started_at": row[2].isoformat() if row[2] else None,
+                    "last_active": row[3].isoformat() if row[3] else None,
+                    "user_agent": row[4],
+                    "ip_address": row[5]
+                })
+            
+            cur.close()
+            conn.close()
+            self.send_json_response(response)
+        except Exception as e:
+            if conn:
+                conn.close()
+            self.send_json_response([])
     
     def handle_session_history(self, route, query_params):
         """Get history for a specific session"""
@@ -112,14 +193,63 @@ class handler(BaseHTTPRequestHandler):
     
     def handle_stats_overview(self, query_params):
         """Get statistics overview"""
-        # TODO: Query database when DATABASE_URL is set
-        response = {
-            "total_queries": 0,
-            "unique_sessions": 0,
-            "avg_response_time_ms": 0,
-            "daily_queries": []
-        }
-        self.send_json_response(response)
+        conn = get_db_connection()
+        if not conn:
+            self.send_json_response({
+                "total_queries": 0,
+                "unique_sessions": 0,
+                "avg_response_time_ms": 0,
+                "daily_queries": []
+            })
+            return
+        
+        try:
+            cur = conn.cursor()
+            
+            # Get total stats
+            cur.execute("""
+                SELECT 
+                    COUNT(*) as total,
+                    COUNT(DISTINCT session_id) as sessions,
+                    AVG(response_time_ms) as avg_time
+                FROM chat_logs
+            """)
+            stats = cur.fetchone()
+            
+            # Get daily queries for last 7 days
+            cur.execute("""
+                SELECT 
+                    DATE(created_at) as date,
+                    COUNT(*) as count
+                FROM chat_logs
+                WHERE created_at >= NOW() - INTERVAL '7 days'
+                GROUP BY DATE(created_at)
+                ORDER BY date DESC
+            """)
+            daily = cur.fetchall()
+            
+            response = {
+                "total_queries": stats[0] or 0,
+                "unique_sessions": stats[1] or 0,
+                "avg_response_time_ms": int(stats[2] or 0),
+                "daily_queries": [
+                    {"date": str(row[0]), "count": row[1]}
+                    for row in daily
+                ]
+            }
+            
+            cur.close()
+            conn.close()
+            self.send_json_response(response)
+        except Exception as e:
+            if conn:
+                conn.close()
+            self.send_json_response({
+                "total_queries": 0,
+                "unique_sessions": 0,
+                "avg_response_time_ms": 0,
+                "daily_queries": []
+            })
     
     def handle_interactions(self, query_params):
         """Get drug interactions"""
