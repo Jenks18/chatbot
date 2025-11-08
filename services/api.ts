@@ -2,10 +2,9 @@ import axios from 'axios';
 
 // For Vercel deployment, use relative path so frontend and backend are on same domain
 // For local development, use localhost:8000
+const IS_PRODUCTION = typeof window !== 'undefined' && window.location.hostname !== 'localhost';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 
-  (typeof window !== 'undefined' && window.location.hostname !== 'localhost' 
-    ? '' // Use relative path in production (Vercel)
-    : 'http://localhost:8000'); // Use localhost in development
+  (IS_PRODUCTION ? '' : 'http://localhost:8000');
 
 export interface ChatMessage {
   message: string;
@@ -80,15 +79,23 @@ export interface StatsOverview {
 
 class ApiService {
   private baseURL: string;
+  private isProduction: boolean;
 
   constructor() {
     this.baseURL = API_BASE_URL;
+    this.isProduction = IS_PRODUCTION;
+  }
+
+  // Helper to build endpoint URL
+  private buildEndpoint(path: string): string {
+    // In production (Vercel), paths are already at /api/*
+    // In development, prefix with baseURL
+    return this.isProduction ? path : `${this.baseURL}${path}`;
   }
 
   // Chat endpoints
   async sendMessage(message: string, sessionId?: string, userMode?: 'patient' | 'doctor' | 'researcher'): Promise<ChatResponse> {
-    const endpoint = this.baseURL ? `${this.baseURL}/api/chat` : '/api/chat';
-    const response = await axios.post<ChatResponse>(endpoint, {
+    const response = await axios.post<ChatResponse>(this.buildEndpoint('/api/chat'), {
       message,
       session_id: sessionId,
       user_mode: userMode || 'patient',
@@ -97,45 +104,39 @@ class ApiService {
   }
 
   async getChatHistory(sessionId: string, limit: number = 50): Promise<{ session_id: string; history: ChatLog[] }> {
-    const endpoint = this.baseURL ? `${this.baseURL}/api/history/${sessionId}` : `/api/history/${sessionId}`;
-    const response = await axios.get(endpoint, {
+    const response = await axios.get(this.buildEndpoint(`/api/history/${sessionId}`), {
       params: { limit },
     });
     return response.data;
   }
 
   async getSessionStats(sessionId: string): Promise<SessionStats> {
-    const endpoint = this.baseURL ? `${this.baseURL}/api/session/${sessionId}/stats` : `/api/session/${sessionId}/stats`;
-    const response = await axios.get(endpoint);
+    const response = await axios.get(this.buildEndpoint(`/api/session/${sessionId}/stats`));
     return response.data;
   }
 
   // Admin endpoints
   async getAllLogs(limit: number = 100, offset: number = 0): Promise<ChatLog[]> {
-    const endpoint = this.baseURL ? `${this.baseURL}/api/admin/logs` : '/api/admin/logs';
-    const response = await axios.get<ChatLog[]>(endpoint, {
+    const response = await axios.get<ChatLog[]>(this.buildEndpoint('/api/admin/logs'), {
       params: { limit, offset },
     });
     return response.data;
   }
 
   async getRecentLogs(hours: number = 24, limit: number = 100): Promise<ChatLog[]> {
-    const endpoint = this.baseURL ? `${this.baseURL}/api/admin/logs/recent` : '/api/admin/logs/recent';
-    const response = await axios.get<ChatLog[]>(endpoint, {
+    const response = await axios.get<ChatLog[]>(this.buildEndpoint('/api/admin/logs/recent'), {
       params: { hours, limit },
     });
     return response.data;
   }
 
   async getStatsOverview(): Promise<StatsOverview> {
-    const endpoint = this.baseURL ? `${this.baseURL}/api/admin/stats/overview` : '/api/admin/stats/overview';
-    const response = await axios.get<StatsOverview>(endpoint);
+    const response = await axios.get<StatsOverview>(this.buildEndpoint('/api/admin/stats/overview'));
     return response.data;
   }
 
   async getAllSessions(limit: number = 50): Promise<any[]> {
-    const endpoint = this.baseURL ? `${this.baseURL}/api/admin/sessions` : '/api/admin/sessions';
-    const response = await axios.get(endpoint, {
+    const response = await axios.get(this.buildEndpoint('/api/admin/sessions'), {
       params: { limit },
     });
     return response.data;
@@ -143,30 +144,26 @@ class ApiService {
 
   // Interaction management
   async getInteractions(limit: number = 100): Promise<any[]> {
-    const endpoint = this.baseURL ? `${this.baseURL}/api/admin/interactions` : '/api/admin/interactions';
-    const response = await axios.get(endpoint, {
+    const response = await axios.get(this.buildEndpoint('/api/admin/interactions'), {
       params: { limit },
     });
     return response.data;
   }
 
   async runFetchReferences(limit: number = 100): Promise<any> {
-    const endpoint = this.baseURL ? `${this.baseURL}/api/admin/pipeline/fetch-references` : '/api/admin/pipeline/fetch-references';
-    const response = await axios.post(endpoint, null, {
+    const response = await axios.post(this.buildEndpoint('/api/admin/pipeline/fetch-references'), null, {
       params: { limit },
     });
     return response.data;
   }
 
   async getSessionHistory(sessionId: string): Promise<any> {
-    const endpoint = this.baseURL ? `${this.baseURL}/api/admin/sessions/${sessionId}/history` : `/api/admin/sessions/${sessionId}/history`;
-    const response = await axios.get(endpoint);
+    const response = await axios.get(this.buildEndpoint(`/api/admin/sessions/${sessionId}/history`));
     return response.data;
   }
 
   async searchLogs(query: string, limit: number = 50): Promise<ChatLog[]> {
-    const endpoint = this.baseURL ? `${this.baseURL}/api/admin/search` : '/api/admin/search';
-    const response = await axios.get<ChatLog[]>(endpoint, {
+    const response = await axios.get<ChatLog[]>(this.buildEndpoint('/api/admin/search'), {
       params: { query, limit },
     });
     return response.data;
@@ -174,8 +171,7 @@ class ApiService {
 
   // Health check
   async checkHealth(): Promise<HealthStatus> {
-    const endpoint = this.baseURL ? `${this.baseURL}/health` : '/api/health';
-    const response = await axios.get<HealthStatus>(endpoint);
+    const response = await axios.get<HealthStatus>(this.buildEndpoint('/api/health'));
     return response.data;
   }
 }
