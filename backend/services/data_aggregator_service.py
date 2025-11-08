@@ -15,7 +15,7 @@ import json
 from typing import List, Dict, Optional
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
-from backend.db.models import APICache
+from ..db.models import APICache
 import xml.etree.ElementTree as ET
 
 # API Keys from environment

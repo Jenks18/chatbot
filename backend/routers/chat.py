@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
-from backend.db.database import get_db
-from backend.schemas import ChatMessage, ChatResponse
-from backend.services.model_router import model_service  # DeepSeek model service
-from backend.services.log_service import log_service
-from backend.services.geo_service import geo_service
-from backend.services.interaction_service import interaction_service, build_consumer_summary_from_evidence
-from backend.services.data_aggregator_service import DrugDataAggregator, extract_drug_names
+from ..db.database import get_db
+from ..schemas import ChatMessage, ChatResponse
+from ..services.model_router import model_service  # DeepSeek model service
+from ..services.log_service import log_service
+from ..services.geo_service import geo_service
+from ..services.interaction_service import interaction_service, build_consumer_summary_from_evidence
+from ..services.data_aggregator_service import DrugDataAggregator, extract_drug_names
 import uuid
 import time
 import re

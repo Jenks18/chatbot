@@ -10,8 +10,8 @@ import os
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 sys.path.insert(0, ROOT)
 
-from db.database import get_db
-from db.models import Reference
+from backend.db.database import get_db
+from backend.db.models import Reference
 import httpx
 from bs4 import BeautifulSoup
 
