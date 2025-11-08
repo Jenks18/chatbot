@@ -115,7 +115,9 @@ export default function Admin() {
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
+    // Ensure UTC timezone is specified if not already
+    const utcString = dateString.includes('Z') || dateString.includes('+') ? dateString : dateString + 'Z';
+    const date = new Date(utcString);
     return date.toLocaleString(undefined, {
       year: 'numeric',
       month: 'short',
@@ -128,7 +130,9 @@ export default function Admin() {
   };
 
   const formatDateShort = (dateString: string) => {
-    const date = new Date(dateString);
+    // Ensure UTC timezone is specified if not already
+    const utcString = dateString.includes('Z') || dateString.includes('+') ? dateString : dateString + 'Z';
+    const date = new Date(utcString);
     return date.toLocaleString(undefined, {
       month: 'short',
       day: 'numeric',

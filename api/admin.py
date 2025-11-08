@@ -150,15 +150,47 @@ class handler(BaseHTTPRequestHandler):
             self.send_error_response(400, "Session ID required")
             return
         
-        # TODO: Query database when DATABASE_URL is set
-        response = {
-            "session_id": session_id,
-            "started_at": datetime.utcnow().isoformat(),
-            "last_active": datetime.utcnow().isoformat(),
-            "message_count": 0,
-            "messages": []
+        # Query all messages for this session
+        headers = {
+            'apikey': SUPABASE_KEY,
+            'Authorization': f'Bearer {SUPABASE_KEY}',
+            'Content-Type': 'application/json'
         }
-        self.send_json_response(response)
+        
+        url = f'{SUPABASE_REST_URL}/chat_logs?session_id=eq.{session_id}&select=*&order=created_at.asc'
+        
+        try:
+            response = httpx.get(url, headers=headers, timeout=10.0)
+            messages = response.json() if response.status_code == 200 else []
+            
+            if not messages:
+                self.send_json_response({
+                    "session_id": session_id,
+                    "started_at": datetime.utcnow().isoformat(),
+                    "last_active": datetime.utcnow().isoformat(),
+                    "message_count": 0,
+                    "messages": []
+                })
+                return
+            
+            # Build response with actual messages
+            result = {
+                "session_id": session_id,
+                "started_at": messages[0]['created_at'],
+                "last_active": messages[-1]['created_at'],
+                "message_count": len(messages),
+                "messages": messages
+            }
+            self.send_json_response(result)
+        except Exception as e:
+            print(f"Error fetching session history: {e}")
+            self.send_json_response({
+                "session_id": session_id,
+                "started_at": datetime.utcnow().isoformat(),
+                "last_active": datetime.utcnow().isoformat(),
+                "message_count": 0,
+                "messages": []
+            })
     
     def handle_stats_overview(self, query_params):
         """Get statistics overview"""
