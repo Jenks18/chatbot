@@ -124,7 +124,7 @@ class GroqModelService:
                         {"role": "user", "content": user_content}
                     ],
                     temperature=temperature,
-                    max_completion_tokens=max_tokens,
+                    max_tokens=max_tokens,
                     top_p=1,
                     stream=True,
                     stop=None,
@@ -230,7 +230,7 @@ Provide a clear, concise summary in 2-3 sentences."""
                         {"role": "user", "content": user_prompt}
                     ],
                     temperature=0.0,
-                    max_completion_tokens=200,
+                    max_tokens=200,
                     stream=False
                 )
             )
@@ -275,7 +275,7 @@ Provide a clear, concise summary in 2-3 sentences."""
                     self.client.chat.completions.create,
                     model=self.model_name,
                     messages=[{"role": "user", "content": "test"}],
-                    max_completion_tokens=5,
+                    max_tokens=5,
                     stream=False
                 )
             )
