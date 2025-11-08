@@ -51,6 +51,7 @@ export default function Admin() {
   const [pipelineResult, setPipelineResult] = useState<any | null>(null);
   const [activeTab, setActiveTab] = useState<'sessions' | 'stats'>('sessions');
   const [refreshing, setRefreshing] = useState(false);
+  const [technicalModeMap, setTechnicalModeMap] = useState<Record<number, boolean>>({});
 
   useEffect(() => {
     loadData();
@@ -498,7 +499,13 @@ export default function Admin() {
                   Full Conversation History
                 </h3>
                 {selectedSession.messages.map((msg, index) => {
-                  const [showTechnical, setShowTechnical] = React.useState(false);
+                  const showTechnical = technicalModeMap[msg.id] || false;
+                  const toggleMode = () => {
+                    setTechnicalModeMap(prev => ({
+                      ...prev,
+                      [msg.id]: !prev[msg.id]
+                    }));
+                  };
                   
                   return (
                     <div key={msg.id} className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
@@ -543,7 +550,7 @@ export default function Admin() {
                             {msg.consumer_summary && (
                               <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
                                 <button
-                                  onClick={() => setShowTechnical(false)}
+                                  onClick={() => toggleMode()}
                                   className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
                                     !showTechnical
                                       ? 'bg-white dark:bg-gray-700 text-green-600 dark:text-green-400 shadow-sm'
@@ -553,7 +560,7 @@ export default function Admin() {
                                   📖 Simple
                                 </button>
                                 <button
-                                  onClick={() => setShowTechnical(true)}
+                                  onClick={() => toggleMode()}
                                   className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
                                     showTechnical
                                       ? 'bg-white dark:bg-gray-700 text-purple-600 dark:text-purple-400 shadow-sm'
