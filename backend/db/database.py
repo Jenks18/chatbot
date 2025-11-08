@@ -19,6 +19,10 @@ except:
 USE_DEV_SQLITE = os.getenv("DEV_SQLITE", "0").lower() in ("1", "true", "yes")
 env_db_url = os.getenv("DATABASE_URL")
 
+# Vercel Postgres uses postgres:// but SQLAlchemy needs postgresql://
+if env_db_url and env_db_url.startswith("postgres://"):
+    env_db_url = env_db_url.replace("postgres://", "postgresql://", 1)
+
 sqlite_path = os.path.join(os.path.dirname(__file__), "../dev-data.sqlite")
 sqlite_url = f"sqlite:///{os.path.abspath(sqlite_path)}"
 
