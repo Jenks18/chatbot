@@ -4,7 +4,11 @@ from sqlalchemy.orm import sessionmaker
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+# Only load .env if it exists (local dev), skip on serverless
+try:
+    load_dotenv()
+except:
+    pass
 
 # Allow a safe local SQLite fallback for development to avoid requiring
 # system-level Postgres build dependencies (libpq / OpenSSL) during local dev.

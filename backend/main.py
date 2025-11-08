@@ -11,7 +11,11 @@ from datetime import datetime
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+# Only load .env if it exists (local dev), skip on serverless
+try:
+    load_dotenv()
+except:
+    pass
 
 # Create database tables
 Base.metadata.create_all(bind=engine)

@@ -10,10 +10,14 @@ from dotenv import load_dotenv
 from pathlib import Path
 from functools import partial
 
-# Load .env from backend directory
-backend_dir = Path(__file__).parent.parent
-env_path = backend_dir / '.env'
-load_dotenv(dotenv_path=env_path)
+# Load .env from backend directory (local dev only)
+try:
+    backend_dir = Path(__file__).parent.parent
+    env_path = backend_dir / '.env'
+    if env_path.exists():
+        load_dotenv(dotenv_path=env_path)
+except:
+    pass  # Skip on serverless - env vars come from platform
 
 # Mode-specific prompts
 PATIENT_MODE_PROMPT = """You are a helpful medical assistant speaking to a patient. 
