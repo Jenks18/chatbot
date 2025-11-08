@@ -7,19 +7,35 @@ import json
 import os
 from datetime import datetime, timedelta
 from urllib.parse import urlparse, parse_qs
+import httpx
 
 # Supabase configuration
 SUPABASE_URL = os.environ.get('NEXT_PUBLIC_SUPABASE_URL', 'https://zzeycmksnujfdvasxoti.supabase.co')
 SUPABASE_KEY = os.environ.get('NEXT_PUBLIC_SUPABASE_ANON_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp6ZXljbWtzbnVqZmR2YXN4b3RpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIyODUxMTYsImV4cCI6MjA3Nzg2MTExNn0.gX37n0KQK9__8oea55JA1JP-JJhF2wUG18jIeaV81oM')
+SUPABASE_REST_URL = f'{SUPABASE_URL}/rest/v1'
 
-def get_supabase_client():
-    """Get Supabase client"""
+def query_supabase(table, select='*', order_by=None, limit=None, offset=None):
+    """Query Supabase using REST API"""
     try:
-        from supabase import create_client, Client
-        return create_client(SUPABASE_URL, SUPABASE_KEY)
+        headers = {
+            'apikey': SUPABASE_KEY,
+            'Authorization': f'Bearer {SUPABASE_KEY}',
+            'Content-Type': 'application/json'
+        }
+        
+        url = f'{SUPABASE_REST_URL}/{table}?select={select}'
+        if order_by:
+            url += f'&order={order_by}'
+        if limit:
+            url += f'&limit={limit}'
+        if offset:
+            url += f'&offset={offset}'
+        
+        response = httpx.get(url, headers=headers, timeout=10.0)
+        return response.json() if response.status_code == 200 else []
     except Exception as e:
-        print(f"Failed to create Supabase client: {e}")
-        return None
+        print(f"Supabase query error: {e}")
+        return []
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -75,22 +91,8 @@ class handler(BaseHTTPRequestHandler):
         limit = int(query_params.get('limit', ['100'])[0])
         offset = int(query_params.get('offset', ['0'])[0])
         
-        supabase = get_supabase_client()
-        if not supabase:
-            self.send_json_response([])
-            return
-        
-        try:
-            response = supabase.table('chat_logs')\
-                .select('*')\
-                .order('created_at', desc=True)\
-                .range(offset, offset + limit - 1)\
-                .execute()
-            
-            self.send_json_response(response.data)
-        except Exception as e:
-            print(f"Error fetching logs: {e}")
-            self.send_json_response([])
+        logs = query_supabase('chat_logs', select='*', order_by='created_at.desc', limit=limit, offset=offset)
+        self.send_json_response(logs)
     
     def handle_logs_recent(self, query_params):
         """Get recent logs (last N hours)"""
@@ -105,47 +107,34 @@ class handler(BaseHTTPRequestHandler):
         """Get all sessions"""
         limit = int(query_params.get('limit', ['50'])[0])
         
-        supabase = get_supabase_client()
-        if not supabase:
-            self.send_json_response([])
-            return
+        logs = query_supabase('chat_logs', select='session_id,created_at,user_agent,ip_address', order_by='created_at.desc')
         
-        try:
-            # Get all logs and group by session_id
-            response = supabase.table('chat_logs')\
-                .select('session_id, created_at, user_agent, ip_address')\
-                .order('created_at', desc=True)\
-                .execute()
-            
-            # Group by session_id
-            sessions_dict = {}
-            for log in response.data:
-                sid = log['session_id']
-                if sid not in sessions_dict:
-                    sessions_dict[sid] = {
-                        'session_id': sid,
-                        'started_at': log['created_at'],
-                        'last_active': log['created_at'],
-                        'message_count': 0,
-                        'user_agent': log.get('user_agent', ''),
-                        'ip_address': log.get('ip_address', '')
-                    }
-                sessions_dict[sid]['message_count'] += 1
-                # Update last_active if this is more recent
-                if log['created_at'] > sessions_dict[sid]['last_active']:
-                    sessions_dict[sid]['last_active'] = log['created_at']
-                # Update started_at if this is earlier
-                if log['created_at'] < sessions_dict[sid]['started_at']:
-                    sessions_dict[sid]['started_at'] = log['created_at']
-            
-            # Convert to list and sort by last_active
-            sessions = list(sessions_dict.values())
-            sessions.sort(key=lambda x: x['last_active'], reverse=True)
-            
-            self.send_json_response(sessions[:limit])
-        except Exception as e:
-            print(f"Error fetching sessions: {e}")
-            self.send_json_response([])
+        # Group by session_id
+        sessions_dict = {}
+        for log in logs:
+            sid = log['session_id']
+            if sid not in sessions_dict:
+                sessions_dict[sid] = {
+                    'session_id': sid,
+                    'started_at': log['created_at'],
+                    'last_active': log['created_at'],
+                    'message_count': 0,
+                    'user_agent': log.get('user_agent', ''),
+                    'ip_address': log.get('ip_address', '')
+                }
+            sessions_dict[sid]['message_count'] += 1
+            # Update last_active if this is more recent
+            if log['created_at'] > sessions_dict[sid]['last_active']:
+                sessions_dict[sid]['last_active'] = log['created_at']
+            # Update started_at if this is earlier
+            if log['created_at'] < sessions_dict[sid]['started_at']:
+                sessions_dict[sid]['started_at'] = log['created_at']
+        
+        # Convert to list and sort by last_active
+        sessions = list(sessions_dict.values())
+        sessions.sort(key=lambda x: x['last_active'], reverse=True)
+        
+        self.send_json_response(sessions[:limit])
     
     def handle_session_history(self, route, query_params):
         """Get history for a specific session"""
@@ -173,8 +162,9 @@ class handler(BaseHTTPRequestHandler):
     
     def handle_stats_overview(self, query_params):
         """Get statistics overview"""
-        supabase = get_supabase_client()
-        if not supabase:
+        logs = query_supabase('chat_logs', select='session_id,created_at,response_time_ms')
+        
+        if not logs:
             self.send_json_response({
                 "total_queries": 0,
                 "unique_sessions": 0,
@@ -183,58 +173,33 @@ class handler(BaseHTTPRequestHandler):
             })
             return
         
-        try:
-            # Get all logs
-            response = supabase.table('chat_logs')\
-                .select('session_id, created_at, response_time_ms')\
-                .execute()
-            
-            logs = response.data
-            
-            if not logs:
-                self.send_json_response({
-                    "total_queries": 0,
-                    "unique_sessions": 0,
-                    "avg_response_time_ms": 0,
-                    "daily_queries": []
-                })
-                return
-            
-            # Calculate stats
-            total_queries = len(logs)
-            unique_sessions = len(set(log['session_id'] for log in logs))
-            
-            # Calculate average response time
-            response_times = [log.get('response_time_ms', 0) for log in logs if log.get('response_time_ms')]
-            avg_response_time = int(sum(response_times) / len(response_times)) if response_times else 0
-            
-            # Calculate daily queries for last 7 days
-            daily_dict = {}
-            for log in logs:
-                date_str = log['created_at'][:10]  # Extract YYYY-MM-DD
-                daily_dict[date_str] = daily_dict.get(date_str, 0) + 1
-            
-            daily_queries = [
-                {"date": date, "count": count}
-                for date, count in sorted(daily_dict.items(), reverse=True)[:7]
-            ]
-            
-            response_data = {
-                "total_queries": total_queries,
-                "unique_sessions": unique_sessions,
-                "avg_response_time_ms": avg_response_time,
-                "daily_queries": daily_queries
-            }
-            
-            self.send_json_response(response_data)
-        except Exception as e:
-            print(f"Error fetching stats: {e}")
-            self.send_json_response({
-                "total_queries": 0,
-                "unique_sessions": 0,
-                "avg_response_time_ms": 0,
-                "daily_queries": []
-            })
+        # Calculate stats
+        total_queries = len(logs)
+        unique_sessions = len(set(log['session_id'] for log in logs))
+        
+        # Calculate average response time
+        response_times = [log.get('response_time_ms', 0) for log in logs if log.get('response_time_ms')]
+        avg_response_time = int(sum(response_times) / len(response_times)) if response_times else 0
+        
+        # Calculate daily queries for last 7 days
+        daily_dict = {}
+        for log in logs:
+            date_str = log['created_at'][:10]  # Extract YYYY-MM-DD
+            daily_dict[date_str] = daily_dict.get(date_str, 0) + 1
+        
+        daily_queries = [
+            {"date": date, "count": count}
+            for date, count in sorted(daily_dict.items(), reverse=True)[:7]
+        ]
+        
+        response_data = {
+            "total_queries": total_queries,
+            "unique_sessions": unique_sessions,
+            "avg_response_time_ms": avg_response_time,
+            "daily_queries": daily_queries
+        }
+        
+        self.send_json_response(response_data)
     
     def handle_interactions(self, query_params):
         """Get drug interactions"""
