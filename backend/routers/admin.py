@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc
-from db.database import get_db
-from db.models import ChatLog, Session as SessionModel
+from backend.db.database import get_db
+from backend.db.models import ChatLog, Session as SessionModel
 from typing import List
-from schemas import ChatLogResponse
-from db.models import Reference, Interaction
+from backend.schemas import ChatLogResponse
+from backend.db.models import Reference, Interaction
 from fastapi import HTTPException
 
 router = APIRouter()

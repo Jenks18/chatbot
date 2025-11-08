@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from db.models import ChatLog, Session as SessionModel
+from backend.db.models import ChatLog, Session as SessionModel
 from typing import List, Optional
 from datetime import datetime, timedelta
 

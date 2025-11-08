@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from db.models import Interaction, Reference
+from backend.db.models import Interaction, Reference
 from typing import List, Optional
 
 class InteractionService:
