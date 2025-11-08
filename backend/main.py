@@ -1,12 +1,5 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from .db.database import engine, get_db, DATABASE_URL as DB_URL
-from .db.models import Base
-from .routers import chat, admin
-from .schemas import HealthResponse
-from .services.model_router import model_service
-from .services.interaction_service import seed_default_interactions
-from sqlalchemy.orm import Session
 from datetime import datetime
 import os
 from dotenv import load_dotenv
@@ -19,12 +12,35 @@ try:
 except:
     pass
 
-# Create database tables (skip detailed logging in serverless)
+# Import database components with error handling
 try:
-    Base.metadata.create_all(bind=engine)
+    from .db.database import engine, get_db, DATABASE_URL as DB_URL
+    from .db.models import Base
+    from sqlalchemy.orm import Session
+    
+    # Create database tables (skip detailed logging in serverless)
+    try:
+        Base.metadata.create_all(bind=engine)
+    except Exception as e:
+        if not is_vercel:
+            print(f"⚠️  Database initialization warning: {e}")
+    
+    DB_AVAILABLE = True
 except Exception as e:
     if not is_vercel:
-        print(f"⚠️  Database initialization warning: {e}")
+        print(f"⚠️  Database not available: {e}")
+    DB_AVAILABLE = False
+    DB_URL = "not_configured"
+    
+    # Create a dummy get_db that returns None
+    def get_db():
+        yield None
+
+# Import routers and services
+from .routers import chat, admin
+from .schemas import HealthResponse
+from .services.model_router import model_service
+from .services.interaction_service import seed_default_interactions
 
 app = FastAPI(
     title="ToxicoGPT API",
@@ -63,14 +79,18 @@ async def health_check():
     Check the health of all system components
     """
     # Check database
-    db_status = "healthy"
-    try:
-        from sqlalchemy import text
-        db = next(get_db())
-        db.execute(text("SELECT 1"))
-        db.close()
-    except Exception as e:
-        db_status = f"unhealthy: {str(e)[:100]}"
+    if not DB_AVAILABLE:
+        db_status = "not_configured"
+    else:
+        db_status = "healthy"
+        try:
+            from sqlalchemy import text
+            db = next(get_db())
+            if db is not None:
+                db.execute(text("SELECT 1"))
+                db.close()
+        except Exception as e:
+            db_status = f"unhealthy: {str(e)[:100]}"
     
     # Check model server
     model_status_str = "unknown"
