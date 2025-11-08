@@ -13,25 +13,28 @@ from datetime import datetime
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 os.environ['VERCEL'] = '1'
 
-# Database connection
-DATABASE_URL = os.environ.get('DATABASE_URL', 'postgresql://postgres:Kifag102o25!@db.zzeycmksnujfdvasxoti.supabase.co:5432/postgres')
+# Supabase configuration
+SUPABASE_URL = os.environ.get('NEXT_PUBLIC_SUPABASE_URL', 'https://zzeycmksnujfdvasxoti.supabase.co')
+SUPABASE_KEY = os.environ.get('NEXT_PUBLIC_SUPABASE_ANON_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp6ZXljbWtzbnVqZmR2YXN4b3RpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIyODUxMTYsImV4cCI6MjA3Nzg2MTExNn0.gX37n0KQK9__8oea55JA1JP-JJhF2wUG18jIeaV81oM')
 
 def log_to_database(session_id, question, answer, model_used, response_time_ms, ip_address, user_agent):
-    """Log chat interaction to database"""
-    if not DATABASE_URL:
-        return
+    """Log chat interaction to Supabase"""
     try:
-        import psycopg2
-        conn = psycopg2.connect(DATABASE_URL)
-        cur = conn.cursor()
-        cur.execute("""
-            INSERT INTO chat_logs 
-            (session_id, question, answer, model_used, response_time_ms, ip_address, user_agent, created_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-        """, (session_id, question, answer, model_used, response_time_ms, ip_address, user_agent, datetime.now()))
-        conn.commit()
-        cur.close()
-        conn.close()
+        from supabase import create_client
+        supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+        
+        data = {
+            'session_id': session_id,
+            'question': question,
+            'answer': answer,
+            'model_used': model_used,
+            'response_time_ms': response_time_ms,
+            'ip_address': ip_address,
+            'user_agent': user_agent,
+            'created_at': datetime.now().isoformat()
+        }
+        
+        supabase.table('chat_logs').insert(data).execute()
     except Exception as e:
         print(f"Failed to log to database: {e}")
         pass
