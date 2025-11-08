@@ -5,6 +5,9 @@ from http.server import BaseHTTPRequestHandler
 import json
 import os
 import sys
+import asyncio
+import uuid
+from datetime import datetime
 
 # Add backend to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
@@ -18,18 +21,43 @@ class handler(BaseHTTPRequestHandler):
             post_data = self.rfile.read(content_length)
             data = json.loads(post_data.decode('utf-8'))
             
-            # Import chat router
-            from backend.routers.chat import chat as chat_handler
-            from backend.schemas import ChatMessage
+            # Import services
+            from backend.services.model_router import model_service
             
-            # Create message object
-            message = ChatMessage(**data)
+            # Extract request data
+            user_message = data.get('message', '')
+            session_id = data.get('session_id') or str(uuid.uuid4())
+            user_mode = data.get('user_mode', 'patient')
             
-            # Process through chat handler
-            # Note: This is a simplified version - full implementation would need async handling
+            if not user_message:
+                raise ValueError("Message is required")
+            
+            # Generate response using Groq
+            # Run async function in sync context
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            
+            start_time = datetime.now()
+            ai_response = loop.run_until_complete(
+                model_service.generate_response(
+                    query=user_message,
+                    user_mode=user_mode,
+                    max_tokens=2000,
+                    temperature=0.7
+                )
+            )
+            end_time = datetime.now()
+            response_time_ms = int((end_time - start_time).total_seconds() * 1000)
+            
+            loop.close()
+            
+            # Build response
             response = {
-                "response": "Chat endpoint placeholder - needs async handling",
-                "session_id": message.session_id or "new-session"
+                "answer": ai_response,
+                "session_id": session_id,
+                "model_used": "groq/compound",
+                "response_time_ms": response_time_ms,
+                "sources": []
             }
             
             self.send_response(200)
@@ -41,10 +69,14 @@ class handler(BaseHTTPRequestHandler):
         except Exception as e:
             error_response = {
                 "error": str(e),
-                "message": "Chat endpoint error"
+                "answer": f"Sorry, I encountered an error: {str(e)}",
+                "session_id": data.get('session_id', 'error'),
+                "model_used": "error",
+                "response_time_ms": 0
             }
             self.send_response(500)
             self.send_header('Content-Type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
             self.wfile.write(json.dumps(error_response).encode())
     
