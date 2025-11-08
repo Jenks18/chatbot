@@ -103,16 +103,8 @@ class GroqModelService:
             user_content = user_query
         
         try:
-            # Prepare compound_custom for tools
-            compound_config = {}
-            if enable_tools:
-                compound_config = {
-                    "tools": {
-                        "enabled_tools": ["web_search", "code_interpreter", "visit_website"]
-                    }
-                }
-            
             # Run synchronous Groq API call in thread pool (SDK is not async)
+            # The compound model automatically has tools enabled
             loop = asyncio.get_event_loop()
             completion = await loop.run_in_executor(
                 None,  # Use default executor
@@ -127,8 +119,7 @@ class GroqModelService:
                     max_tokens=max_tokens,
                     top_p=1,
                     stream=True,
-                    stop=None,
-                    compound_custom=compound_config if compound_config else None
+                    stop=None
                 )
             )
             
