@@ -87,7 +87,8 @@ class ApiService {
 
   // Chat endpoints
   async sendMessage(message: string, sessionId?: string, userMode?: 'patient' | 'doctor' | 'researcher'): Promise<ChatResponse> {
-    const response = await axios.post<ChatResponse>(`${this.baseURL}/api/chat`, {
+    const endpoint = this.baseURL ? `${this.baseURL}/api/chat` : '/api/chat';
+    const response = await axios.post<ChatResponse>(endpoint, {
       message,
       session_id: sessionId,
       user_mode: userMode || 'patient',
@@ -96,39 +97,45 @@ class ApiService {
   }
 
   async getChatHistory(sessionId: string, limit: number = 50): Promise<{ session_id: string; history: ChatLog[] }> {
-    const response = await axios.get(`${this.baseURL}/api/history/${sessionId}`, {
+    const endpoint = this.baseURL ? `${this.baseURL}/api/history/${sessionId}` : `/api/history/${sessionId}`;
+    const response = await axios.get(endpoint, {
       params: { limit },
     });
     return response.data;
   }
 
   async getSessionStats(sessionId: string): Promise<SessionStats> {
-    const response = await axios.get(`${this.baseURL}/api/session/${sessionId}/stats`);
+    const endpoint = this.baseURL ? `${this.baseURL}/api/session/${sessionId}/stats` : `/api/session/${sessionId}/stats`;
+    const response = await axios.get(endpoint);
     return response.data;
   }
 
   // Admin endpoints
   async getAllLogs(limit: number = 100, offset: number = 0): Promise<ChatLog[]> {
-    const response = await axios.get<ChatLog[]>(`${this.baseURL}/api/admin/logs`, {
+    const endpoint = this.baseURL ? `${this.baseURL}/api/admin/logs` : '/api/admin/logs';
+    const response = await axios.get<ChatLog[]>(endpoint, {
       params: { limit, offset },
     });
     return response.data;
   }
 
   async getRecentLogs(hours: number = 24, limit: number = 100): Promise<ChatLog[]> {
-    const response = await axios.get<ChatLog[]>(`${this.baseURL}/api/admin/logs/recent`, {
+    const endpoint = this.baseURL ? `${this.baseURL}/api/admin/logs/recent` : '/api/admin/logs/recent';
+    const response = await axios.get<ChatLog[]>(endpoint, {
       params: { hours, limit },
     });
     return response.data;
   }
 
   async getStatsOverview(): Promise<StatsOverview> {
-    const response = await axios.get<StatsOverview>(`${this.baseURL}/api/admin/stats/overview`);
+    const endpoint = this.baseURL ? `${this.baseURL}/api/admin/stats/overview` : '/api/admin/stats/overview';
+    const response = await axios.get<StatsOverview>(endpoint);
     return response.data;
   }
 
   async getAllSessions(limit: number = 50): Promise<any[]> {
-    const response = await axios.get(`${this.baseURL}/api/admin/sessions`, {
+    const endpoint = this.baseURL ? `${this.baseURL}/api/admin/sessions` : '/api/admin/sessions';
+    const response = await axios.get(endpoint, {
       params: { limit },
     });
     return response.data;
@@ -136,26 +143,30 @@ class ApiService {
 
   // Interaction management
   async getInteractions(limit: number = 100): Promise<any[]> {
-    const response = await axios.get(`${this.baseURL}/api/admin/interactions`, {
+    const endpoint = this.baseURL ? `${this.baseURL}/api/admin/interactions` : '/api/admin/interactions';
+    const response = await axios.get(endpoint, {
       params: { limit },
     });
     return response.data;
   }
 
   async runFetchReferences(limit: number = 100): Promise<any> {
-    const response = await axios.post(`${this.baseURL}/api/admin/pipeline/fetch-references`, null, {
+    const endpoint = this.baseURL ? `${this.baseURL}/api/admin/pipeline/fetch-references` : '/api/admin/pipeline/fetch-references';
+    const response = await axios.post(endpoint, null, {
       params: { limit },
     });
     return response.data;
   }
 
   async getSessionHistory(sessionId: string): Promise<any> {
-    const response = await axios.get(`${this.baseURL}/api/admin/sessions/${sessionId}/history`);
+    const endpoint = this.baseURL ? `${this.baseURL}/api/admin/sessions/${sessionId}/history` : `/api/admin/sessions/${sessionId}/history`;
+    const response = await axios.get(endpoint);
     return response.data;
   }
 
   async searchLogs(query: string, limit: number = 50): Promise<ChatLog[]> {
-    const response = await axios.get<ChatLog[]>(`${this.baseURL}/api/admin/search`, {
+    const endpoint = this.baseURL ? `${this.baseURL}/api/admin/search` : '/api/admin/search';
+    const response = await axios.get<ChatLog[]>(endpoint, {
       params: { query, limit },
     });
     return response.data;
@@ -163,7 +174,8 @@ class ApiService {
 
   // Health check
   async checkHealth(): Promise<HealthStatus> {
-    const response = await axios.get<HealthStatus>(`${this.baseURL}/health`);
+    const endpoint = this.baseURL ? `${this.baseURL}/health` : '/api/health';
+    const response = await axios.get<HealthStatus>(endpoint);
     return response.data;
   }
 }
