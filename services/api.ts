@@ -1,7 +1,11 @@
 import axios from 'axios';
 
-// Use environment variable or fallback to localhost for development
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+// For Vercel deployment, use relative path so frontend and backend are on same domain
+// For local development, use localhost:8000
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 
+  (typeof window !== 'undefined' && window.location.hostname !== 'localhost' 
+    ? '' // Use relative path in production (Vercel)
+    : 'http://localhost:8000'); // Use localhost in development
 
 export interface ChatMessage {
   message: string;
