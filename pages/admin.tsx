@@ -19,6 +19,7 @@ interface ConversationMessage {
   id: number;
   question: string;
   answer: string;
+  consumer_summary?: string;
   created_at: string;
   response_time_ms: number;
   model_used: string;
@@ -496,44 +497,123 @@ export default function Admin() {
                 <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
                   Full Conversation History
                 </h3>
-                {selectedSession.messages.map((msg, index) => (
-                  <div key={msg.id} className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-                    <div className="bg-gray-100 dark:bg-gray-800 px-4 py-2 flex items-center justify-between border-b border-gray-200 dark:border-gray-700">
-                      <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-                        💬 Message #{index + 1}
-                      </span>
-                      <div className="flex items-center gap-3 text-xs text-gray-600 dark:text-gray-400">
-                        <span>🕒 {formatDateShort(msg.created_at)}</span>
-                        <span className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-0.5 rounded">
-                          ⚡ {msg.response_time_ms}ms
+                {selectedSession.messages.map((msg, index) => {
+                  const [showTechnical, setShowTechnical] = React.useState(false);
+                  
+                  return (
+                    <div key={msg.id} className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                      <div className="bg-gray-100 dark:bg-gray-800 px-4 py-2 flex items-center justify-between border-b border-gray-200 dark:border-gray-700">
+                        <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                          💬 Message #{index + 1}
                         </span>
-                      </div>
-                    </div>
-                    
-                    <div className="p-4 space-y-4">
-                      <div>
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-xs font-bold text-blue-600 dark:text-blue-400">👤 USER QUESTION</span>
-                        </div>
-                        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-                          <p className="text-sm text-gray-900 dark:text-white">{msg.question}</p>
+                        <div className="flex items-center gap-3 text-xs text-gray-600 dark:text-gray-400">
+                          <span>🕒 {formatDateShort(msg.created_at)}</span>
+                          <span className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-0.5 rounded">
+                            ⚡ {msg.response_time_ms}ms
+                          </span>
                         </div>
                       </div>
+                      
+                      <div className="p-6 space-y-5">
+                        {/* User Question */}
+                        <div>
+                          <div className="flex items-center gap-2 mb-3">
+                            <span className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wide">
+                              👤 User Question
+                            </span>
+                          </div>
+                          <div className="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 rounded-r-lg p-4 shadow-sm">
+                            <p className="text-base text-gray-900 dark:text-white font-medium">{msg.question}</p>
+                          </div>
+                        </div>
 
-                      <div>
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-xs font-bold text-green-600 dark:text-green-400">🤖 AI RESPONSE</span>
-                          <span className="text-xs text-gray-500 dark:text-gray-400">({msg.model_used})</span>
-                        </div>
-                        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
-                          <p className="text-sm text-gray-900 dark:text-white whitespace-pre-wrap leading-relaxed">
-                            {msg.answer}
-                          </p>
+                        {/* AI Response with Toggle */}
+                        <div>
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold text-green-600 dark:text-green-400 uppercase tracking-wide">
+                                🤖 AI Response
+                              </span>
+                              <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">
+                                {msg.model_used}
+                              </span>
+                            </div>
+                            
+                            {/* Toggle between Simple and Technical */}
+                            {msg.consumer_summary && (
+                              <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+                                <button
+                                  onClick={() => setShowTechnical(false)}
+                                  className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
+                                    !showTechnical
+                                      ? 'bg-white dark:bg-gray-700 text-green-600 dark:text-green-400 shadow-sm'
+                                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                                  }`}
+                                >
+                                  📖 Simple
+                                </button>
+                                <button
+                                  onClick={() => setShowTechnical(true)}
+                                  className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
+                                    showTechnical
+                                      ? 'bg-white dark:bg-gray-700 text-purple-600 dark:text-purple-400 shadow-sm'
+                                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                                  }`}
+                                >
+                                  🔬 Technical
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Simple Version */}
+                          {!showTechnical && msg.consumer_summary && (
+                            <div className="bg-green-50 dark:bg-green-900/20 border-l-4 border-green-500 rounded-r-lg p-5 shadow-sm">
+                              <div className="flex items-start gap-3 mb-3">
+                                <span className="text-xl">💡</span>
+                                <div className="flex-1">
+                                  <h4 className="text-sm font-bold text-green-700 dark:text-green-300 mb-1">
+                                    Simple Explanation
+                                  </h4>
+                                  <p className="text-xs text-green-600 dark:text-green-400">
+                                    Easy-to-understand version for consumers
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="prose prose-sm dark:prose-invert max-w-none">
+                                <p className="text-sm text-gray-900 dark:text-white whitespace-pre-wrap leading-relaxed">
+                                  {msg.consumer_summary}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Technical Version */}
+                          {(showTechnical || !msg.consumer_summary) && (
+                            <div className="bg-purple-50 dark:bg-purple-900/20 border-l-4 border-purple-500 rounded-r-lg p-5 shadow-sm">
+                              <div className="flex items-start gap-3 mb-3">
+                                <span className="text-xl">🔬</span>
+                                <div className="flex-1">
+                                  <h4 className="text-sm font-bold text-purple-700 dark:text-purple-300 mb-1">
+                                    Technical Response
+                                  </h4>
+                                  <p className="text-xs text-purple-600 dark:text-purple-400">
+                                    Detailed medical and scientific information
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="prose prose-sm dark:prose-invert max-w-none">
+                                <div className="text-sm text-gray-900 dark:text-white whitespace-pre-wrap leading-relaxed">
+                                  {msg.answer}
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 

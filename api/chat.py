@@ -18,7 +18,7 @@ SUPABASE_URL = os.environ.get('NEXT_PUBLIC_SUPABASE_URL', 'https://zzeycmksnujfd
 SUPABASE_KEY = os.environ.get('NEXT_PUBLIC_SUPABASE_ANON_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp6ZXljbWtzbnVqZmR2YXN4b3RpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIyODUxMTYsImV4cCI6MjA3Nzg2MTExNn0.gX37n0KQK9__8oea55JA1JP-JJhF2wUG18jIeaV81oM')
 SUPABASE_REST_URL = f'{SUPABASE_URL}/rest/v1'
 
-def log_to_database(session_id, question, answer, model_used, response_time_ms, ip_address, user_agent):
+def log_to_database(session_id, question, answer, model_used, response_time_ms, ip_address, user_agent, consumer_summary=None):
     """Log chat interaction to Supabase using HTTP"""
     try:
         import httpx
@@ -34,6 +34,7 @@ def log_to_database(session_id, question, answer, model_used, response_time_ms, 
             'session_id': session_id,
             'question': question,
             'answer': answer,
+            'consumer_summary': consumer_summary,
             'model_used': model_used,
             'response_time_ms': response_time_ms,
             'ip_address': ip_address,
@@ -105,7 +106,7 @@ class handler(BaseHTTPRequestHandler):
             # Log to database
             ip_address = self.headers.get('X-Forwarded-For', self.client_address[0])
             user_agent = self.headers.get('User-Agent', '')
-            log_to_database(session_id, user_message, ai_response, "groq/compound", response_time_ms, ip_address, user_agent)
+            log_to_database(session_id, user_message, ai_response, "groq/compound", response_time_ms, ip_address, user_agent, consumer_summary)
             
             # Build response
             response = {
