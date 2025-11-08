@@ -2,31 +2,9 @@
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
   "framework": "nextjs",
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/next"
-    },
-    {
-      "src": "api/index.py",
-      "use": "@vercel/python",
-      "config": {
-        "maxDuration": 30
-      }
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/index.py"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/$1"
-    }
-  ],
   "functions": {
-    "api/index.py": {
+    "api/*.py": {
+      "runtime": "python3.9",
       "memory": 1024,
       "maxDuration": 30
     }
