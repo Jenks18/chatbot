@@ -39,9 +39,11 @@ class GroqModelService:
     def __init__(self):
         self.api_key = os.getenv("GROQ_API_KEY")
         self.model_name = "groq/compound"
+        is_vercel = os.getenv('VERCEL') == '1'
         
         if not self.api_key:
-            print("⚠️  WARNING: GROQ_API_KEY not set")
+            if not is_vercel:
+                print("⚠️  WARNING: GROQ_API_KEY not set")
             self.client = None
         else:
             self.client = Groq(
@@ -50,7 +52,8 @@ class GroqModelService:
                     "Groq-Model-Version": "latest"
                 }
             )
-            print(f"✅ Groq API initialized: {self.model_name} (with tools enabled)")
+            if not is_vercel:
+                print(f"✅ Groq API initialized: {self.model_name} (with tools enabled)")
     
     async def generate_response(
         self,

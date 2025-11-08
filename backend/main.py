@@ -12,13 +12,19 @@ import os
 from dotenv import load_dotenv
 
 # Only load .env if it exists (local dev), skip on serverless
+is_vercel = os.getenv('VERCEL') == '1'
 try:
-    load_dotenv()
+    if not is_vercel:
+        load_dotenv()
 except:
     pass
 
-# Create database tables
-Base.metadata.create_all(bind=engine)
+# Create database tables (skip detailed logging in serverless)
+try:
+    Base.metadata.create_all(bind=engine)
+except Exception as e:
+    if not is_vercel:
+        print(f"⚠️  Database initialization warning: {e}")
 
 app = FastAPI(
     title="ToxicoGPT API",
@@ -28,7 +34,8 @@ app = FastAPI(
 
 # CORS configuration
 CORS_ORIGINS = [origin.strip() for origin in os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")]
-print(f"🌐 CORS enabled for: {CORS_ORIGINS}")
+if not is_vercel:
+    print(f"🌐 CORS enabled for: {CORS_ORIGINS}")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
@@ -89,6 +96,10 @@ async def health_check():
 
 @app.on_event("startup")
 async def startup_event():
+    # Skip verbose logging in serverless environment
+    if is_vercel:
+        return
+        
     print("=" * 60)
     print("🧬 ToxicoGPT API Starting Up")
     print("=" * 60)
