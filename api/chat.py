@@ -32,6 +32,38 @@ class handler(BaseHTTPRequestHandler):
             if not user_message:
                 raise ValueError("Message is required")
             
+            # Get conversation history for context
+            conversation_history = []
+            try:
+                from backend.db.database import SessionLocal
+                from backend.db.models import ChatLog
+                
+                db = SessionLocal()
+                
+                # Fetch last 10 messages from this session for context
+                previous_messages = db.query(ChatLog).filter(
+                    ChatLog.session_id == session_id
+                ).order_by(ChatLog.created_at.desc()).limit(10).all()
+                
+                # Reverse to get chronological order
+                previous_messages = list(reversed(previous_messages))
+                
+                # Build conversation history
+                for msg in previous_messages:
+                    conversation_history.append({
+                        "role": "user",
+                        "content": msg.question
+                    })
+                    conversation_history.append({
+                        "role": "assistant",
+                        "content": msg.answer
+                    })
+                
+                db.close()
+            except Exception as hist_error:
+                print(f"Error loading history: {hist_error}")
+                # Continue without history if there's an error
+            
             # Generate response using Groq
             # Run async function in sync context
             loop = asyncio.new_event_loop()
@@ -39,13 +71,14 @@ class handler(BaseHTTPRequestHandler):
             
             start_time = datetime.now()
             
-            # Generate technical response
+            # Generate technical response with conversation history
             ai_response = loop.run_until_complete(
                 model_service.generate_response(
                     query=user_message,
                     user_mode=user_mode,
                     max_tokens=1200,  # Reduced to prevent "too large" errors
-                    temperature=0.7
+                    temperature=0.7,
+                    conversation_history=conversation_history  # Pass history for context
                 )
             )
             
@@ -100,7 +133,7 @@ class handler(BaseHTTPRequestHandler):
                     session_id=session_id,
                     question=user_message,
                     answer=ai_response,
-                    model_used="groq/compound",
+                    model_used="groq/llama-3.3-70b",
                     response_time_ms=response_time_ms,
                     ip_address=client_ip,
                     user_agent=user_agent,
@@ -121,7 +154,7 @@ class handler(BaseHTTPRequestHandler):
                 "answer": ai_response,
                 "consumer_summary": consumer_summary,
                 "session_id": session_id,
-                "model_used": "groq/compound",
+                "model_used": "groq/llama-3.3-70b",
                 "response_time_ms": response_time_ms,
                 "sources": []
             }
