@@ -9,7 +9,6 @@ interface SessionInfo {
   last_active: string;
   message_count: number;
   user_agent: string;
-  ip_address?: string;
   country?: string;
   city?: string;
   first_message_preview?: string;
@@ -19,7 +18,6 @@ interface ConversationMessage {
   id: number;
   question: string;
   answer: string;
-  consumer_summary?: string;
   created_at: string;
   response_time_ms: number;
   model_used: string;
@@ -31,7 +29,6 @@ interface SessionHistory {
   started_at: string;
   last_active: string;
   user_agent: string;
-  ip_address?: string;
   country?: string;
   city?: string;
   region?: string;
@@ -50,20 +47,13 @@ export default function Admin() {
   const [interactions, setInteractions] = useState<any[]>([]);
   const [pipelineResult, setPipelineResult] = useState<any | null>(null);
   const [activeTab, setActiveTab] = useState<'sessions' | 'stats'>('sessions');
-  const [refreshing, setRefreshing] = useState(false);
-  const [technicalModeMap, setTechnicalModeMap] = useState<Record<number, boolean>>({});
 
   useEffect(() => {
     loadData();
-    // Auto-refresh every 10 seconds
-    const interval = setInterval(() => {
-      loadData(true); // Silent refresh
-    }, 10000);
-    return () => clearInterval(interval);
   }, []);
 
-  const loadData = async (silent = false) => {
-    if (!silent) setLoading(true);
+  const loadData = async () => {
+    setLoading(true);
     try {
       const [sessionsData, statsData] = await Promise.all([
         apiService.getAllSessions(100),
@@ -76,14 +66,8 @@ export default function Admin() {
     } catch (error) {
       console.error('Failed to load admin data:', error);
     } finally {
-      if (!silent) setLoading(false);
+      setLoading(false);
     }
-  };
-
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await loadData();
-    setRefreshing(false);
   };
 
   const loadInteractions = async () => {
@@ -117,31 +101,7 @@ export default function Admin() {
   };
 
   const formatDate = (dateString: string) => {
-    // Ensure UTC timezone is specified if not already
-    const utcString = dateString.includes('Z') || dateString.includes('+') ? dateString : dateString + 'Z';
-    const date = new Date(utcString);
-    return date.toLocaleString(undefined, {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: true
-    });
-  };
-
-  const formatDateShort = (dateString: string) => {
-    // Ensure UTC timezone is specified if not already
-    const utcString = dateString.includes('Z') || dateString.includes('+') ? dateString : dateString + 'Z';
-    const date = new Date(utcString);
-    return date.toLocaleString(undefined, {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true
-    });
+    return new Date(dateString).toLocaleString();
   };
 
   const formatDuration = (start: string, end: string) => {
@@ -172,23 +132,13 @@ export default function Admin() {
             </div>
             <div className="flex gap-3">
               <button
-                onClick={handleRefresh}
-                disabled={refreshing}
-                className="px-4 py-2 bg-toxgreen-600 text-white rounded-lg hover:bg-toxgreen-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium flex items-center gap-2"
+                onClick={loadData}
+                className="px-4 py-2 bg-toxgreen-600 text-white rounded-lg hover:bg-toxgreen-700 text-sm font-medium flex items-center gap-2"
               >
-                {refreshing ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    Refreshing...
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                    Refresh
-                  </>
-                )}
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Refresh
               </button>
               <button
                 onClick={runPipeline}
@@ -237,14 +187,6 @@ export default function Admin() {
         </div>
 
         <main className="max-w-7xl mx-auto px-6 py-6">
-          <div className="mb-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-            <p className="text-sm text-blue-800 dark:text-blue-200 flex items-center gap-2">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              Auto-refreshing every 10 seconds • Click any conversation to see full chat history
-            </p>
-          </div>
           {loading ? (
             <div className="text-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-toxgreen-600 mx-auto"></div>
@@ -284,11 +226,8 @@ export default function Admin() {
                               </p>
                             )}
                             <div className="flex flex-wrap gap-4 text-xs text-gray-500 dark:text-gray-400">
-                              <span>🕒 Started: {formatDateShort(session.started_at)}</span>
+                              <span>🕒 {formatDate(session.started_at)}</span>
                               <span>⏱️ Duration: {formatDuration(session.started_at, session.last_active)}</span>
-                              {session.ip_address && (
-                                <span>🌐 IP: {session.ip_address}</span>
-                              )}
                               {session.city && session.country && (
                                 <span>📍 {session.city}, {session.country}</span>
                               )}
@@ -397,230 +336,72 @@ export default function Admin() {
             </div>
 
             <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
-              <div className="space-y-3">
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-                  <div>
-                    <span className="text-gray-500 dark:text-gray-400 block text-xs mb-1">Started</span>
-                    <p className="font-medium text-gray-900 dark:text-white">
-                      {formatDate(selectedSession.started_at)}
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-gray-500 dark:text-gray-400 block text-xs mb-1">Last Active</span>
-                    <p className="font-medium text-gray-900 dark:text-white">
-                      {formatDate(selectedSession.last_active)}
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-gray-500 dark:text-gray-400 block text-xs mb-1">Duration</span>
-                    <p className="font-medium text-gray-900 dark:text-white">
-                      {formatDuration(selectedSession.started_at, selectedSession.last_active)}
-                    </p>
-                  </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div>
+                  <span className="text-gray-500 dark:text-gray-400">Started</span>
+                  <p className="font-medium text-gray-900 dark:text-white">
+                    {formatDate(selectedSession.started_at)}
+                  </p>
                 </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm pt-2 border-t border-gray-200 dark:border-gray-700">
-                  {selectedSession.ip_address && (
-                    <div>
-                      <span className="text-gray-500 dark:text-gray-400 block text-xs mb-1">IP Address</span>
-                      <p className="font-medium text-gray-900 dark:text-white font-mono text-xs">
-                        {selectedSession.ip_address}
-                      </p>
-                    </div>
-                  )}
-                  {selectedSession.user_agent && (
-                    <div>
-                      <span className="text-gray-500 dark:text-gray-400 block text-xs mb-1">Device/Browser</span>
-                      <p className="font-medium text-gray-900 dark:text-white text-xs truncate" title={selectedSession.user_agent}>
-                        {selectedSession.user_agent}
-                      </p>
-                    </div>
-                  )}
+                <div>
+                  <span className="text-gray-500 dark:text-gray-400">Duration</span>
+                  <p className="font-medium text-gray-900 dark:text-white">
+                    {formatDuration(selectedSession.started_at, selectedSession.last_active)}
+                  </p>
                 </div>
-
-                {(selectedSession.city || selectedSession.timezone) && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm pt-2 border-t border-gray-200 dark:border-gray-700">
-                    {selectedSession.city && (
-                      <div>
-                        <span className="text-gray-500 dark:text-gray-400 block text-xs mb-1">Location</span>
-                        <p className="font-medium text-gray-900 dark:text-white">
-                          {selectedSession.city}{selectedSession.country && `, ${selectedSession.country}`}
-                        </p>
-                      </div>
-                    )}
-                    {selectedSession.timezone && (
-                      <div>
-                        <span className="text-gray-500 dark:text-gray-400 block text-xs mb-1">Timezone</span>
-                        <p className="font-medium text-gray-900 dark:text-white">
-                          {selectedSession.timezone}
-                        </p>
-                      </div>
-                    )}
+                {selectedSession.city && (
+                  <div>
+                    <span className="text-gray-500 dark:text-gray-400">Location</span>
+                    <p className="font-medium text-gray-900 dark:text-white">
+                      {selectedSession.city}, {selectedSession.country}
+                    </p>
+                  </div>
+                )}
+                {selectedSession.timezone && (
+                  <div>
+                    <span className="text-gray-500 dark:text-gray-400">Timezone</span>
+                    <p className="font-medium text-gray-900 dark:text-white">
+                      {selectedSession.timezone}
+                    </p>
                   </div>
                 )}
               </div>
             </div>
 
             <div className="flex-1 overflow-y-auto px-6 py-4">
-              {/* Conversation Summary */}
-              <div className="mb-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-200 mb-2">
-                  📊 Conversation Summary
-                </h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-                  <div>
-                    <span className="text-blue-700 dark:text-blue-300">Total Messages</span>
-                    <p className="font-bold text-blue-900 dark:text-blue-100">{selectedSession.message_count}</p>
-                  </div>
-                  <div>
-                    <span className="text-blue-700 dark:text-blue-300">Avg Response Time</span>
-                    <p className="font-bold text-blue-900 dark:text-blue-100">
-                      {selectedSession.messages.length > 0 
-                        ? (selectedSession.messages.reduce((sum, m) => sum + m.response_time_ms, 0) / selectedSession.messages.length).toFixed(0)
-                        : 0}ms
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-blue-700 dark:text-blue-300">Model</span>
-                    <p className="font-bold text-blue-900 dark:text-blue-100">
-                      {selectedSession.messages[0]?.model_used || 'N/A'}
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-blue-700 dark:text-blue-300">Status</span>
-                    <p className="font-bold text-green-600 dark:text-green-400">✓ Complete</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Conversation Messages */}
               <div className="space-y-6">
-                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
-                  Full Conversation History
-                </h3>
-                {selectedSession.messages.map((msg, index) => {
-                  const showTechnical = technicalModeMap[msg.id] || false;
-                  const toggleMode = () => {
-                    setTechnicalModeMap(prev => ({
-                      ...prev,
-                      [msg.id]: !prev[msg.id]
-                    }));
-                  };
-                  
-                  return (
-                    <div key={msg.id} className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-                      <div className="bg-gray-100 dark:bg-gray-800 px-4 py-2 flex items-center justify-between border-b border-gray-200 dark:border-gray-700">
-                        <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-                          💬 Message #{index + 1}
-                        </span>
-                        <div className="flex items-center gap-3 text-xs text-gray-600 dark:text-gray-400">
-                          <span>🕒 {formatDateShort(msg.created_at)}</span>
-                          <span className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-0.5 rounded">
-                            ⚡ {msg.response_time_ms}ms
-                          </span>
-                        </div>
+                {selectedSession.messages.map((msg, index) => (
+                  <div key={msg.id} className="border-l-4 border-toxgreen-500 pl-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                        Message {index + 1} • {formatDate(msg.created_at)}
+                      </span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {msg.response_time_ms}ms
+                      </span>
+                    </div>
+                    
+                    <div className="mb-3">
+                      <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">
+                        USER QUESTION
                       </div>
-                      
-                      <div className="p-6 space-y-5">
-                        {/* User Question */}
-                        <div>
-                          <div className="flex items-center gap-2 mb-3">
-                            <span className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wide">
-                              👤 User Question
-                            </span>
-                          </div>
-                          <div className="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 rounded-r-lg p-4 shadow-sm">
-                            <p className="text-base text-gray-900 dark:text-white font-medium">{msg.question}</p>
-                          </div>
-                        </div>
-
-                        {/* AI Response with Toggle */}
-                        <div>
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs font-bold text-green-600 dark:text-green-400 uppercase tracking-wide">
-                                🤖 AI Response
-                              </span>
-                              <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">
-                                {msg.model_used}
-                              </span>
-                            </div>
-                            
-                            {/* Toggle between Simple and Technical */}
-                            {msg.consumer_summary && (
-                              <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
-                                <button
-                                  onClick={() => toggleMode()}
-                                  className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
-                                    !showTechnical
-                                      ? 'bg-white dark:bg-gray-700 text-green-600 dark:text-green-400 shadow-sm'
-                                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                                  }`}
-                                >
-                                  📖 Simple
-                                </button>
-                                <button
-                                  onClick={() => toggleMode()}
-                                  className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
-                                    showTechnical
-                                      ? 'bg-white dark:bg-gray-700 text-purple-600 dark:text-purple-400 shadow-sm'
-                                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                                  }`}
-                                >
-                                  🔬 Technical
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                          
-                          {/* Simple Version */}
-                          {!showTechnical && msg.consumer_summary && (
-                            <div className="bg-green-50 dark:bg-green-900/20 border-l-4 border-green-500 rounded-r-lg p-5 shadow-sm">
-                              <div className="flex items-start gap-3 mb-3">
-                                <span className="text-xl">💡</span>
-                                <div className="flex-1">
-                                  <h4 className="text-sm font-bold text-green-700 dark:text-green-300 mb-1">
-                                    Simple Explanation
-                                  </h4>
-                                  <p className="text-xs text-green-600 dark:text-green-400">
-                                    Easy-to-understand version for consumers
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="prose prose-sm dark:prose-invert max-w-none">
-                                <p className="text-sm text-gray-900 dark:text-white whitespace-pre-wrap leading-relaxed">
-                                  {msg.consumer_summary}
-                                </p>
-                              </div>
-                            </div>
-                          )}
-                          
-                          {/* Technical Version */}
-                          {(showTechnical || !msg.consumer_summary) && (
-                            <div className="bg-purple-50 dark:bg-purple-900/20 border-l-4 border-purple-500 rounded-r-lg p-5 shadow-sm">
-                              <div className="flex items-start gap-3 mb-3">
-                                <span className="text-xl">🔬</span>
-                                <div className="flex-1">
-                                  <h4 className="text-sm font-bold text-purple-700 dark:text-purple-300 mb-1">
-                                    Technical Response
-                                  </h4>
-                                  <p className="text-xs text-purple-600 dark:text-purple-400">
-                                    Detailed medical and scientific information
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="prose prose-sm dark:prose-invert max-w-none">
-                                <div className="text-sm text-gray-900 dark:text-white whitespace-pre-wrap leading-relaxed">
-                                  {msg.answer}
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
+                      <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
+                        <p className="text-sm text-gray-900 dark:text-white">{msg.question}</p>
                       </div>
                     </div>
-                  );
-                })}
+
+                    <div>
+                      <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">
+                        AI RESPONSE
+                      </div>
+                      <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3">
+                        <p className="text-sm text-gray-900 dark:text-white whitespace-pre-wrap">
+                          {msg.answer}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 

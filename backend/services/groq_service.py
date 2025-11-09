@@ -19,134 +19,18 @@ try:
 except:
     pass  # Skip on serverless - env vars come from platform
 
-# Mode-specific prompts with reading level enforcement
-PATIENT_MODE_PROMPT = """You are a helpful medical assistant speaking to a general patient audience.
-
-CRITICAL FORMATTING - Write for patients (6th grade reading level):
-
-**NEVER use dense paragraphs, complex tables, or medical jargon!**
-
-**Required Structure:**
-1. Start with a simple 1-sentence answer
-2. Use emoji section headers (💊 📋 ⚠️ 🏥)
-3. Short paragraphs (2-3 sentences MAXIMUM)
-4. Simple bullet points with dashes (-)
-5. Use **bold** for safety warnings
-6. End with "Questions? Talk to your doctor or pharmacist."
-
-**Writing Style:**
-- Sentences: 10-15 words max
-- Words: Simple (use "take" not "administer", "doctor" not "physician")
-- No medical terms (if needed, explain in parentheses)
-- Active voice ("Take 2 pills" not "2 pills should be taken")
-- Use "you" and "your" (conversational)
-
-**Example Format:**
-💊 **What is [Drug]?**
-[Drug] is a pain reliever. It helps with headaches and fever.
-
-📋 **How to Take It**
-- Take 1-2 pills every 4-6 hours
-- Don't take more than 8 pills in 24 hours
-- You can take it with or without food
-
-⚠️ **Important Warnings**
-**Stop taking it and call your doctor if you:**
-- Get a rash or itching
-- Feel very sick to your stomach
-- Notice yellow skin or eyes
-
-**Tone:** Friendly, caring, like talking to a family member who needs help."""
+# Mode-specific prompts
+PATIENT_MODE_PROMPT = """You are a helpful medical assistant speaking to a patient. 
+Provide clear, simple explanations without medical jargon. Be empathetic and reassuring.
+When discussing drug information, focus on what patients need to know for safe use."""
 
 DOCTOR_MODE_PROMPT = """You are a medical expert assistant speaking to a healthcare professional.
+Provide detailed clinical information, mechanisms of action, contraindications, and drug interactions.
+Include relevant medical terminology and cite evidence when available."""
 
-CRITICAL FORMATTING - Write for physicians (12th grade medical level):
-
-**NEVER use dense paragraph walls or excessive tables!**
-
-**Required Structure:**
-1. One-sentence clinical summary
-2. Clear sections with bold headers
-3. Bullet points (NOT long paragraphs)
-4. Only use tables if absolutely necessary (max 1 small table)
-5. Bold critical info
-6. End with key clinical pearl
-
-**Sections to Include:**
-**Clinical Use:** Indications with evidence level
-**Dosing:** Standard + adjustments (bullets, not tables)
-**Contraindications:** Key ones only
-**Interactions:** Significant ones with mechanism
-**Monitoring:** What to check
-**Clinical Pearl:** One actionable tip
-
-**Writing Style:**
-- Concise bullets (1-2 lines each)
-- Medical terms OK (contraindication, pharmacokinetics)
-- Include mechanism ONLY if clinically relevant
-- Use abbreviations (PO, BID, q6h, PRN)
-- Focus on decision-making
-
-**Example Format:**
-**Clinical Use**
-First-line for mild-moderate pain (Level A evidence). Antipyretic in fever of any cause.
-
-**Dosing**
-- Standard: 500-1000 mg PO q4-6h PRN (max 4g/day)
-- Hepatic impairment: Max 2g/day
-- Elderly: Start 500 mg q6h
-
-**Contraindications**
-- Severe hepatic disease
-- Acute liver failure
-
-**Key Interaction**
-Warfarin: Monitor INR (minor ↑ risk)
-
-**Clinical Pearl**
-Schedule dosing (q6h) for chronic pain rather than PRN for better analgesia.
-
-**Tone:** Professional, concise, clinical."""
-
-RESEARCHER_MODE_PROMPT = """You are a scientific research assistant speaking to an academic researcher or scientist.
-
-CRITICAL FORMATTING - Write for researchers (academic level):
-
-**NEVER use clinical-style tables or oversimplify!**
-
-**Required Structure:**
-1. Brief scientific context (1-2 sentences)
-2. Clear sections with scientific focus
-3. Academic prose with embedded data
-4. Quantitative parameters inline (not in tables)
-5. Study citations inline (design, n, findings)
-6. End with knowledge gaps
-
-**Sections to Include:**
-**Molecular Mechanism:** Targets, pathways with intermediate steps
-**Pharmacokinetics:** ADME with quantitative parameters
-**Current Research:** Recent findings with study details
-**Methodology:** Analytical approaches
-**Knowledge Gaps:** What's unknown/under investigation
-
-**Writing Style:**
-- Scientific prose (not bullet points)
-- Technical terminology (IC₅₀, Kd, t½, AUC, Cmax)
-- Biochemical pathways (MAPK/ERK, CYP450, etc.)
-- Inline data: "exhibits biphasic elimination (t½α = 0.5h, t½β = 2.1h)"
-- Study context: "Phase III RCT (n=1,203) demonstrated..."
-- Statistical rigor: confidence intervals, p-values
-
-**Example Format:**
-Acetaminophen (APAP) primarily acts via central COX inhibition, though the precise molecular mechanism remains debated. Current evidence suggests weak, reversible inhibition of both COX-1 and COX-2 isoforms (IC₅₀ ≈ 25-50 μM in neural tissue), with preferential activity in the CNS versus peripheral tissues.
-
-Pharmacokinetically, APAP exhibits rapid oral absorption (tmax = 30-60 min) with extensive first-pass hepatic metabolism. Approximately 90-95% undergoes Phase II conjugation (glucuronidation 50-60%, sulfation 30-40%), while 5-10% is oxidized via CYP2E1 to the reactive intermediate NAPQI. A recent metabolomics study (J Pharm Sci 2024, n=156 healthy volunteers) identified three novel minor metabolites, suggesting additional metabolic pathways warrant investigation.
-
-Current research focuses on APAP's role in endocannabinoid modulation. APAP is deacetylated to p-aminophenol, which conjugates with arachidonic acid to form AM404, an endocannabinoid reuptake inhibitor. This pathway may explain APAP's analgesic effects independent of prostaglandin synthesis.
-
-**Knowledge gap:** The relative contribution of COX inhibition versus endocannabinoid modulation to clinical analgesia remains unquantified in human studies.
-
-**Tone:** Academic, precise, hypothesis-driven."""
+RESEARCHER_MODE_PROMPT = """You are a scientific research assistant speaking to a researcher.
+Provide in-depth pharmacological information, mechanisms at molecular level, research findings,
+and detailed chemical/biological pathways. Include citations and evidence quality assessments."""
 
 
 class GroqModelService:
@@ -177,7 +61,7 @@ class GroqModelService:
         question: str = None,  # Alias for query
         context: str = "",
         user_mode: str = "patient",
-        max_tokens: int = 1500,  # Reduced from 2000 to prevent "too large" errors
+        max_tokens: int = 1200,  # Reduced to prevent "too large" errors
         temperature: float = 0.7,
         enable_tools: bool = True
     ) -> str:  # Return string directly like old service
@@ -204,13 +88,13 @@ class GroqModelService:
         if not self.client:
             return "Error: GROQ_API_KEY not configured. Get your free key at https://console.groq.com/keys"
         
-        # Select system prompt based on mode with formatting enforcement
+        # Select system prompt based on mode
         mode_prompts = {
-            "patient": PATIENT_MODE_PROMPT + "\n\n🚨 CRITICAL: You MUST use emoji headers, short paragraphs (max 3 sentences), simple bullets, and bold warnings. NO medical jargon or dense text!",
-            "doctor": DOCTOR_MODE_PROMPT + "\n\n🚨 CRITICAL: You MUST use bullet points, NOT paragraph walls. ONE small table maximum. Focus on clinical decisions. Be scannable!",
-            "researcher": RESEARCHER_MODE_PROMPT + "\n\n🚨 CRITICAL: You MUST use scientific prose with inline data. NO clinical tables. Include quantitative parameters, study details, and mechanisms."
+            "patient": PATIENT_MODE_PROMPT,
+            "doctor": DOCTOR_MODE_PROMPT,
+            "researcher": RESEARCHER_MODE_PROMPT
         }
-        system_prompt = mode_prompts.get(user_mode, mode_prompts["patient"])
+        system_prompt = mode_prompts.get(user_mode, PATIENT_MODE_PROMPT)
         
         # Build the full prompt
         if context:
@@ -255,85 +139,75 @@ class GroqModelService:
         self,
         technical_info: str,
         drug_name: str = "",
-        question: str = "",
-        user_mode: str = "patient"  # Add user_mode parameter
+        question: str = "",  # Added for compatibility
+        user_mode: str = "patient"  # Added to make summaries mode-specific
     ) -> str:
         """
-        Generate mode-appropriate simplified summary from technical information
+        Generate a mode-appropriate simplified summary from technical information
         
         Args:
             technical_info: Technical drug information
             drug_name: Name of the drug
             question: Optional user question for context
-            user_mode: patient/doctor/researcher to customize summary level
+            user_mode: 'patient', 'doctor', or 'researcher' - changes summary style
             
         Returns:
-            Simplified summary appropriate for the user mode
+            Plain-language summary appropriate for the user mode
         """
         if not self.client:
             return ""
         
+        # Truncate technical_info if too long to prevent token overflow
+        max_chars = 800
+        if len(technical_info) > max_chars:
+            technical_info = technical_info[:max_chars] + "..."
+        
         # Mode-specific summary prompts
         if user_mode == "patient":
-            prompt = f"""Create a very brief, patient-friendly summary.
-
-REQUIREMENTS:
-- Write for 6th graders
-- Use 2-4 SHORT sentences (10-15 words each)
-- Use simple everyday words
-- Focus on: what it does, how to use it, key warning
+            prompt = f"""Create a SIMPLE, patient-friendly summary in 2-3 SHORT sentences (6th grade reading level).
+Use everyday words. NO medical jargon. Focus on practical safety info.
 
 {f'Question: {question}' if question else ''}
 {f'Drug: {drug_name}' if drug_name else ''}
 
-Information:
-{technical_info[:1000]}
+Technical Info:
+{technical_info}
 
-Provide ONLY the simple summary (no headers, no formatting)."""
+Write a clear, simple summary that any patient can understand."""
             
         elif user_mode == "doctor":
-            prompt = f"""Create a concise clinical summary for physicians.
-
-REQUIREMENTS:
-- 2-3 sentences maximum
-- Key clinical points only (indication, dosing, major contraindication)
-- Use medical terminology
-- Actionable and concise
+            prompt = f"""Create a CONCISE clinical summary in 2-3 sentences for a healthcare professional.
+Include key clinical points: mechanism, contraindications, monitoring needs.
 
 {f'Question: {question}' if question else ''}
 {f'Drug: {drug_name}' if drug_name else ''}
 
-Information:
-{technical_info[:1200]}
+Technical Info:
+{technical_info}
 
-Provide ONLY the clinical summary."""
+Provide a professional clinical summary."""
             
         else:  # researcher
-            prompt = f"""Create a scientific summary for researchers.
-
-REQUIREMENTS:
-- 2-3 sentences maximum
-- Focus on mechanisms, pathways, and research gaps
-- Include quantitative data if available
-- Academic tone
+            prompt = f"""Create a BRIEF scientific summary in 2-3 sentences for a researcher.
+Focus on: molecular mechanisms, pharmacokinetics, key study findings.
 
 {f'Question: {question}' if question else ''}
 {f'Drug: {drug_name}' if drug_name else ''}
 
-Information:
-{technical_info[:1200]}
+Technical Info:
+{technical_info}
 
-Provide ONLY the scientific summary."""
+Provide a concise research-focused summary."""
 
         result = await self.generate_response(
             query=prompt,
             user_mode=user_mode,
-            max_tokens=300,  # Keep summaries short
+            max_tokens=250,  # Reduced for summaries
             temperature=0.5,
-            enable_tools=False
+            enable_tools=False  # Don't need tools for summaries
         )
         
-        return result
+        return result  # Already a string
     
     async def generate_consumer_summary_with_provenance(
         self,

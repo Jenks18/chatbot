@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Head from 'next/head';
-import { useRouter } from 'next/router';
 import { v4 as uuidv4 } from 'uuid';
 import { apiService } from '../services/api';
 import { ChatMessage, ChatInput } from '../components/ChatInterface';
@@ -16,7 +15,6 @@ interface Message {
 }
 
 export default function Home() {
-  const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -24,37 +22,16 @@ export default function Home() {
   const [isHealthy, setIsHealthy] = useState<boolean | null>(null);
   const [healthError, setHealthError] = useState<string | null>(null);
   const [userMode, setUserMode] = useState<'patient' | 'doctor' | 'researcher'>('patient');
-  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Check if there's a session ID in the URL
-    const urlSessionId = router.query.session as string;
-    
-    if (urlSessionId) {
-      // Load existing session from URL
-      setSessionId(urlSessionId);
-      localStorage.setItem('toxicogpt_session', urlSessionId);
-      loadChatHistory(urlSessionId);
-    } else {
-      // Check localStorage for existing session
-      const storedSessionId = localStorage.getItem('toxicogpt_session');
-      if (storedSessionId) {
-        // Restore existing session
-        setSessionId(storedSessionId);
-        router.replace(`/?session=${storedSessionId}`, undefined, { shallow: true });
-        loadChatHistory(storedSessionId);
-      } else {
-        // Create new session and update URL
-        const newSessionId = uuidv4();
-        setSessionId(newSessionId);
-        localStorage.setItem('toxicogpt_session', newSessionId);
-        router.replace(`/?session=${newSessionId}`, undefined, { shallow: true });
-      }
-    }
+    // Generate session ID
+    const newSessionId = uuidv4();
+    setSessionId(newSessionId);
+    localStorage.setItem('toxicogpt_session', newSessionId);
 
     // Check API health (with retry)
-    const checkHealth = async () => {
+  const checkHealth = async () => {
       try {
         // First try via the frontend API service (axios)
         const res = await apiService.checkHealth();
@@ -90,33 +67,7 @@ export default function Home() {
       }
     };
     checkHealth();
-  }, [router.query.session]);
-
-  // Load chat history from backend
-  const loadChatHistory = async (sid: string) => {
-    if (!sid) return;
-    setIsLoadingHistory(true);
-    try {
-      // Call the admin API to get session history
-      const response = await apiService.getSessionHistory(sid);
-      if (response && response.messages && response.messages.length > 0) {
-        const loadedMessages: Message[] = response.messages.map((msg: any) => ({
-          role: msg.role,
-          content: msg.content,
-          timestamp: new Date(msg.timestamp),
-          consumerSummary: msg.consumer_summary || msg.consumerSummary,
-          evidence: msg.evidence || [],
-          provenance: msg.provenance,
-        }));
-        setMessages(loadedMessages);
-      }
-    } catch (err: any) {
-      console.error('Failed to load chat history:', err);
-      // Don't show error to user, just start fresh
-    } finally {
-      setIsLoadingHistory(false);
-    }
-  };
+  }, []);
 
   // Expose manual test function for the UI
   const handleTestHealth = async () => {
@@ -153,6 +104,33 @@ export default function Home() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
 
+  // Listen for postMessage requests from WordPress widget iframe
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      // Security: Only accept messages from your WordPress domain
+      // You can add your WordPress domain here for additional security
+      // if (event.origin !== 'https://your-wordpress-site.com') return;
+      
+      if (event.data.type === 'GET_SESSION_ID') {
+        // Get current session ID from URL if it exists
+        const urlParams = new URLSearchParams(window.location.search);
+        const currentSessionId = urlParams.get('session') || sessionId;
+        
+        // Send session ID back to parent window (WordPress)
+        event.source?.postMessage(
+          {
+            type: 'SESSION_ID_RESPONSE',
+            sessionId: currentSessionId
+          },
+          event.origin as any
+        );
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [sessionId]);
+
   const handleSend = async (message: string) => {
     setError(null);
     
@@ -186,13 +164,11 @@ export default function Home() {
   };
 
   const handleClearChat = () => {
-    if (confirm('Are you sure you want to start a new chat? This will create a new conversation.')) {
+    if (confirm('Are you sure you want to clear the chat history?')) {
       setMessages([]);
       const newSessionId = uuidv4();
       setSessionId(newSessionId);
       localStorage.setItem('toxicogpt_session', newSessionId);
-      // Update URL with new session ID
-      router.push(`/?session=${newSessionId}`, undefined, { shallow: true });
     }
   };
 
@@ -205,61 +181,43 @@ export default function Home() {
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
       </Head>
 
-      <div className="flex flex-col h-screen bg-gradient-to-b from-gray-50 via-white to-gray-50">
+      <div className="flex flex-col h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
         {/* Header */}
-        <header className="bg-white border-b border-gray-200 px-6 py-4 shadow-sm">
-          <div className="max-w-6xl mx-auto flex justify-between items-center">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-9 h-9 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg">
-                <span className="text-xl">🧬</span>
+        <header className="bg-gradient-to-r from-slate-900 to-slate-800 border-b-2 border-blue-700/30 px-6 py-5 shadow-2xl backdrop-blur-sm">
+          <div className="max-w-7xl mx-auto flex justify-between items-center">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl shadow-lg shadow-blue-500/30">
+                <span className="text-3xl">🧬</span>
               </div>
               <div>
-                <h1 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">ToxicoGPT</h1>
-                <p className="text-xs text-gray-600 font-medium">Evidence-Based Toxicology AI</p>
+                <h1 className="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-500">ToxicoGPT</h1>
+                <p className="text-sm text-slate-400 font-medium">Evidence-Based Toxicology AI</p>
               </div>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-5">
               {isHealthy !== null && (
-                <div className="flex items-center gap-2 px-2.5 py-1.5 bg-gray-50 rounded-md border border-gray-200">
-                  <div className={`w-2 h-2 rounded-full ${isHealthy ? 'bg-emerald-500' : 'bg-red-500'}`}></div>
-                  <span className="text-xs font-medium text-gray-700">
+                <div className="flex items-center gap-2 px-3 py-2 bg-slate-800/50 rounded-lg border border-slate-700">
+                  <div className={`w-2.5 h-2.5 rounded-full ${isHealthy ? 'bg-blue-500 shadow-lg shadow-blue-500/50 animate-pulse' : 'bg-red-500 shadow-lg shadow-red-500/50'}`}></div>
+                  <span className="text-sm font-semibold text-slate-300">
                     {isHealthy ? 'Online' : 'Offline'}
                   </span>
                 </div>
               )}
               {healthError && (
-                <div className="text-xs text-red-600 max-w-xs truncate">
+                <div className="text-xs text-red-400 max-w-xs truncate">
                   {healthError}
                 </div>
               )}
-              {messages.length > 0 && (
-                <button
-                  onClick={handleClearChat}
-                  className="px-3 py-1.5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-md text-sm font-medium transition-all flex items-center gap-1.5"
-                >
-                  <span className="text-base">+</span>
-                  New Chat
-                </button>
-              )}
-
-              {messages.length > 0 && sessionId && (
-                <button
-                  onClick={() => {
-                    const url = `${window.location.origin}/?session=${sessionId}`;
-                    navigator.clipboard.writeText(url);
-                    alert('Chat link copied to clipboard! Share this link to continue this conversation on any device.');
-                  }}
-                  className="px-3 py-1.5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-md text-sm font-medium transition-all flex items-center gap-1.5"
-                  title="Copy shareable link"
-                >
-                  <span className="text-base">🔗</span>
-                  Share
-                </button>
-              )}
+              <button
+                onClick={handleClearChat}
+                className="text-sm text-slate-400 hover:text-blue-400 transition-colors font-medium"
+              >
+                Clear Chat
+              </button>
               
               <a
                 href="/admin"
-                className="px-3 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-md hover:from-blue-700 hover:to-indigo-700 text-sm font-medium transition-all shadow-sm"
+                className="px-4 py-2 bg-gradient-to-r from-blue-700 to-indigo-800 text-slate-300 hover:text-white rounded-lg hover:from-blue-600 hover:to-indigo-700 text-sm font-semibold transition-all shadow-md hover:shadow-lg border border-blue-600"
               >
                 Admin
               </a>
@@ -268,20 +226,9 @@ export default function Home() {
         </header>
 
         {/* Chat Area */}
-        <main className="flex-1 overflow-y-auto bg-white">
-            <div className="max-w-3xl mx-auto px-6 py-8">
-              {isLoadingHistory ? (
-                <div className="flex items-center justify-center py-16">
-                  <div className="flex flex-col items-center gap-3">
-                    <div className="flex gap-1">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-                    </div>
-                    <span className="text-sm text-gray-600 font-medium">Loading conversation...</span>
-                  </div>
-                </div>
-              ) : messages.length === 0 ? (
+        <main className="flex-1 overflow-y-auto bg-gradient-to-b from-transparent to-slate-950/50">
+            <div className="max-w-5xl mx-auto px-6 py-8">
+              {messages.length === 0 ? (
                 <WelcomeMessage 
                   onSelectCategory={(p) => handleSend(p)} 
                   userMode={userMode}
@@ -301,16 +248,16 @@ export default function Home() {
         </main>
 
         {/* Input Area */}
-        <div className="bg-white border-t border-gray-200 shadow-sm">
-          <div className="max-w-3xl mx-auto">
+        <div className="bg-gradient-to-r from-slate-900 to-slate-800 border-t-2 border-blue-700/30 shadow-2xl backdrop-blur-sm">
+          <div className="max-w-5xl mx-auto">
             <ChatInput onSend={handleSend} disabled={loading || !isHealthy} />
           </div>
         </div>
 
         {/* Footer */}
-        <footer className="bg-gray-50 border-t border-gray-200 px-6 py-3">
-          <div className="max-w-6xl mx-auto">
-            <p className="text-xs text-center text-gray-600">
+        <footer className="bg-slate-900 border-t border-slate-800 px-6 py-4">
+          <div className="max-w-7xl mx-auto">
+            <p className="text-xs text-center text-slate-500">
               ⚠️ For educational and research purposes only. Not a substitute for professional medical advice. Always consult healthcare professionals for medical decisions.
             </p>
           </div>

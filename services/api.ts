@@ -115,28 +115,28 @@ class ApiService {
     return response.data;
   }
 
-  // Admin endpoints - all consolidated to /api/admin
+  // Admin endpoints
   async getAllLogs(limit: number = 100, offset: number = 0): Promise<ChatLog[]> {
-    const response = await axios.get<ChatLog[]>(this.buildEndpoint('/api/admin?route=logs'), {
+    const response = await axios.get<ChatLog[]>(this.buildEndpoint('/api/admin/logs'), {
       params: { limit, offset },
     });
     return response.data;
   }
 
   async getRecentLogs(hours: number = 24, limit: number = 100): Promise<ChatLog[]> {
-    const response = await axios.get<ChatLog[]>(this.buildEndpoint('/api/admin?route=logs/recent'), {
+    const response = await axios.get<ChatLog[]>(this.buildEndpoint('/api/admin/logs/recent'), {
       params: { hours, limit },
     });
     return response.data;
   }
 
   async getStatsOverview(): Promise<StatsOverview> {
-    const response = await axios.get<StatsOverview>(this.buildEndpoint('/api/admin?route=stats/overview'));
+    const response = await axios.get<StatsOverview>(this.buildEndpoint('/api/admin/stats/overview'));
     return response.data;
   }
 
   async getAllSessions(limit: number = 50): Promise<any[]> {
-    const response = await axios.get(this.buildEndpoint('/api/admin?route=sessions'), {
+    const response = await axios.get(this.buildEndpoint('/api/admin/sessions'), {
       params: { limit },
     });
     return response.data;
@@ -144,26 +144,26 @@ class ApiService {
 
   // Interaction management
   async getInteractions(limit: number = 100): Promise<any[]> {
-    const response = await axios.get(this.buildEndpoint('/api/admin?route=interactions'), {
+    const response = await axios.get(this.buildEndpoint('/api/admin/interactions'), {
       params: { limit },
     });
     return response.data;
   }
 
   async runFetchReferences(limit: number = 100): Promise<any> {
-    const response = await axios.post(this.buildEndpoint('/api/admin?route=pipeline/fetch-references'), null, {
+    const response = await axios.post(this.buildEndpoint('/api/admin/pipeline/fetch-references'), null, {
       params: { limit },
     });
     return response.data;
   }
 
   async getSessionHistory(sessionId: string): Promise<any> {
-    const response = await axios.get(this.buildEndpoint(`/api/admin?route=sessions/${sessionId}/history`));
+    const response = await axios.get(this.buildEndpoint(`/api/admin/sessions/${sessionId}/history`));
     return response.data;
   }
 
   async searchLogs(query: string, limit: number = 50): Promise<ChatLog[]> {
-    const response = await axios.get<ChatLog[]>(this.buildEndpoint('/api/admin?route=search'), {
+    const response = await axios.get<ChatLog[]>(this.buildEndpoint('/api/admin/search'), {
       params: { query, limit },
     });
     return response.data;
