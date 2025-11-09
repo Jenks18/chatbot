@@ -38,7 +38,8 @@ class GroqModelService:
     
     def __init__(self):
         self.api_key = os.getenv("GROQ_API_KEY")
-        self.model_name = "groq/compound"
+        # Use llama-3.3-70b-versatile - fastest and most reliable model
+        self.model_name = "llama-3.3-70b-versatile"
         is_vercel = os.getenv('VERCEL') == '1'
         
         if not self.api_key:
@@ -53,7 +54,7 @@ class GroqModelService:
                 }
             )
             if not is_vercel:
-                print(f"✅ Groq API initialized: {self.model_name} (with tools enabled)")
+                print(f"✅ Groq API initialized: {self.model_name}")
     
     async def generate_response(
         self,
@@ -162,10 +163,16 @@ class GroqModelService:
         if len(technical_info) > max_chars:
             technical_info = technical_info[:max_chars] + "..."
         
-        # Mode-specific summary prompts
+        # Mode-specific summary prompts - VERY DIFFERENT STYLES
         if user_mode == "patient":
-            prompt = f"""Create a SIMPLE, patient-friendly summary in 2-3 SHORT sentences (6th grade reading level).
-Use everyday words. NO medical jargon. Focus on practical safety info.
+            prompt = f"""You MUST write in SIMPLE 6th GRADE LANGUAGE. This is for a patient, NOT a medical professional.
+
+RULES:
+- Use 2-3 SHORT sentences ONLY
+- Use everyday words (like "medicine" not "pharmaceutical")
+- NO medical terms like "contraindicated", "metabolism", "pharmacokinetics"
+- Focus ONLY on: What it does, how to use it safely, what to watch out for
+- Write like you're talking to a family member
 
 {f'Question: {question}' if question else ''}
 {f'Drug: {drug_name}' if drug_name else ''}
@@ -173,11 +180,16 @@ Use everyday words. NO medical jargon. Focus on practical safety info.
 Technical Info:
 {technical_info}
 
-Write a clear, simple summary that any patient can understand."""
+Write your SIMPLE summary for a patient now (2-3 short sentences):"""
             
         elif user_mode == "doctor":
-            prompt = f"""Create a CONCISE clinical summary in 2-3 sentences for a healthcare professional.
-Include key clinical points: mechanism, contraindications, monitoring needs.
+            prompt = f"""You MUST write a CLINICAL summary for a DOCTOR. Use medical terminology.
+
+RULES:
+- Write 2-3 sentences with medical terminology
+- Include: mechanism of action, key contraindications, monitoring parameters
+- Use clinical language: "contraindicated", "hepatotoxicity", "QTc prolongation", etc.
+- Focus on clinical decision-making and patient management
 
 {f'Question: {question}' if question else ''}
 {f'Drug: {drug_name}' if drug_name else ''}
@@ -185,11 +197,16 @@ Include key clinical points: mechanism, contraindications, monitoring needs.
 Technical Info:
 {technical_info}
 
-Provide a professional clinical summary."""
+Write your CLINICAL summary for a healthcare professional now (2-3 sentences):"""
             
         else:  # researcher
-            prompt = f"""Create a BRIEF scientific summary in 2-3 sentences for a researcher.
-Focus on: molecular mechanisms, pharmacokinetics, key study findings.
+            prompt = f"""You MUST write a SCIENTIFIC summary for a RESEARCHER. Use advanced scientific terminology.
+
+RULES:
+- Write 2-3 sentences with scientific/molecular detail
+- Include: molecular mechanisms, pharmacokinetic parameters, receptor interactions
+- Use scientific language: "CYP450 metabolism", "half-life", "bioavailability", "receptor affinity"
+- Focus on mechanisms, pathways, and research implications
 
 {f'Question: {question}' if question else ''}
 {f'Drug: {drug_name}' if drug_name else ''}
@@ -197,7 +214,7 @@ Focus on: molecular mechanisms, pharmacokinetics, key study findings.
 Technical Info:
 {technical_info}
 
-Provide a concise research-focused summary."""
+Write your SCIENTIFIC summary for a researcher now (2-3 sentences):"""
 
         result = await self.generate_response(
             query=prompt,
