@@ -64,6 +64,58 @@ class handler(BaseHTTPRequestHandler):
             
             loop.close()
             
+            # Save to database
+            try:
+                from backend.db.database import SessionLocal
+                from backend.db.models import ChatLog, Session as SessionModel
+                
+                db = SessionLocal()
+                
+                # Get client IP
+                client_ip = self.headers.get('X-Forwarded-For', '').split(',')[0].strip() or \
+                           self.headers.get('X-Real-IP', '') or \
+                           self.client_address[0]
+                
+                user_agent = self.headers.get('User-Agent', 'unknown')
+                
+                # Create or update session
+                existing_session = db.query(SessionModel).filter(
+                    SessionModel.session_id == session_id
+                ).first()
+                
+                if not existing_session:
+                    new_session = SessionModel(
+                        session_id=session_id,
+                        user_agent=user_agent,
+                        ip_address=client_ip
+                    )
+                    db.add(new_session)
+                else:
+                    # Update last_active
+                    from sqlalchemy import func
+                    existing_session.last_active = func.now()
+                
+                # Save chat log
+                chat_log = ChatLog(
+                    session_id=session_id,
+                    question=user_message,
+                    answer=ai_response,
+                    model_used="groq/compound",
+                    response_time_ms=response_time_ms,
+                    ip_address=client_ip,
+                    user_agent=user_agent,
+                    extra_metadata={
+                        "consumer_summary": consumer_summary,
+                        "user_mode": user_mode
+                    }
+                )
+                db.add(chat_log)
+                db.commit()
+                db.close()
+            except Exception as db_error:
+                print(f"Database save error: {db_error}")
+                # Continue even if database fails
+            
             # Build response
             response = {
                 "answer": ai_response,

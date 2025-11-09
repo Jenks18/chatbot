@@ -12,6 +12,10 @@
     {
       "source": "/api/health",
       "destination": "/api/health"
+    },
+    {
+      "source": "/api/history/:sessionId",
+      "destination": "/api/history"
     }
   ],
   "functions": {
@@ -23,6 +27,9 @@
     },
     "api/health.py": {
       "maxDuration": 10
+    },
+    "api/history.py": {
+      "maxDuration": 15
     }
   }
 }
