@@ -1,4 +1,4 @@
-<!-- ToxicoGPT Chat Widget - WordPress Safe Version -->
+<!-- ToxicoGPT Chat Widget - Ultra Simple (No 406 Errors) -->
 <style>
   #chat-bubble {
     position: fixed;
@@ -17,12 +17,10 @@
     z-index: 999998;
     transition: transform 0.3s, box-shadow 0.3s;
   }
-
   #chat-bubble:hover {
     transform: scale(1.1);
     box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
   }
-
   #chat-modal {
     position: fixed;
     bottom: 0;
@@ -36,12 +34,10 @@
     z-index: 999999;
     backdrop-filter: blur(4px);
   }
-
-  #chat-modal.active {
+  #chat-modal.show {
     display: flex;
   }
-
-  #chat-container {
+  #chat-box {
     width: 90%;
     max-width: 450px;
     height: 80%;
@@ -53,14 +49,7 @@
     flex-direction: column;
     overflow: hidden;
   }
-
-  #chat-iframe {
-    width: 100%;
-    height: calc(100% - 50px);
-    border: none;
-  }
-
-  #chat-header {
+  #chat-top {
     height: 50px;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     display: flex;
@@ -69,19 +58,16 @@
     padding: 0 15px;
     color: white;
   }
-
-  #chat-header h3 {
+  #chat-top h3 {
     margin: 0;
     font-size: 16px;
     font-weight: 600;
   }
-
-  #chat-actions {
+  #chat-btns {
     display: flex;
     gap: 10px;
   }
-
-  #chat-open-new, #chat-close {
+  #chat-btns button {
     background: rgba(255, 255, 255, 0.2);
     border: none;
     padding: 8px 12px;
@@ -92,13 +78,16 @@
     transition: background 0.2s;
     font-size: 13px;
   }
-
-  #chat-open-new:hover, #chat-close:hover {
+  #chat-btns button:hover {
     background: rgba(255, 255, 255, 0.3);
   }
-
+  #chat-frame {
+    width: 100%;
+    height: calc(100% - 50px);
+    border: none;
+  }
   @media (max-width: 768px) {
-    #chat-container {
+    #chat-box {
       width: 100%;
       height: 100%;
       max-height: 100%;
@@ -107,29 +96,59 @@
   }
 </style>
 
-<!-- Chat Widget HTML -->
-<div id="chat-bubble" onclick="document.getElementById('chat-modal').classList.add('active')" title="Chat with us">💬</div>
+<div id="chat-bubble" title="Chat with us">💬</div>
 
-<div id="chat-modal" onclick="if(event.target===this) this.classList.remove('active')">
-  <div id="chat-container">
-    <div id="chat-header">
+<div id="chat-modal">
+  <div id="chat-box">
+    <div id="chat-top">
       <h3>Chat with us</h3>
-      <div id="chat-actions">
-        <button id="chat-open-new" onclick="window.open('https://chatbot-y1ar.vercel.app/', '_blank'); document.getElementById('chat-modal').classList.remove('active')" title="Open in new window">⧉ Open Full</button>
-        <button id="chat-close" onclick="document.getElementById('chat-modal').classList.remove('active')" title="Close">✕</button>
+      <div id="chat-btns">
+        <button id="open-btn" title="Open in new window">⧉ Open Full</button>
+        <button id="close-btn" title="Close">✕</button>
       </div>
     </div>
-    <iframe id="chat-iframe" src="https://chatbot-y1ar.vercel.app/" allow="microphone; camera"></iframe>
+    <iframe id="chat-frame" src="https://chatbot-y1ar.vercel.app/" allow="microphone; camera"></iframe>
   </div>
 </div>
 
 <script>
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') {
-    var modal = document.getElementById('chat-modal');
-    if (modal.classList.contains('active')) {
-      modal.classList.remove('active');
+(function() {
+  var bubble = document.getElementById('chat-bubble');
+  var modal = document.getElementById('chat-modal');
+  var closeBtn = document.getElementById('close-btn');
+  var openBtn = document.getElementById('open-btn');
+  var frame = document.getElementById('chat-frame');
+  var sessionUrl = 'https://chatbot-y1ar.vercel.app/';
+  
+  bubble.onclick = function() {
+    modal.classList.add('show');
+  };
+  
+  closeBtn.onclick = function() {
+    modal.classList.remove('show');
+  };
+  
+  openBtn.onclick = function() {
+    window.open(sessionUrl, '_blank');
+    modal.classList.remove('show');
+  };
+  
+  modal.onclick = function(e) {
+    if (e.target === modal) {
+      modal.classList.remove('show');
     }
-  }
-});
+  };
+  
+  document.onkeydown = function(e) {
+    if (e.key === 'Escape' && modal.classList.contains('show')) {
+      modal.classList.remove('show');
+    }
+  };
+  
+  window.onmessage = function(e) {
+    if (e.origin === 'https://chatbot-y1ar.vercel.app' && e.data.type === 'SESSION_UPDATE') {
+      sessionUrl = 'https://chatbot-y1ar.vercel.app/?session=' + e.data.sessionId;
+    }
+  };
+})();
 </script>

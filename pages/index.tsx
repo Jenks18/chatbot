@@ -30,29 +30,31 @@ export default function Home() {
     const urlParams = new URLSearchParams(window.location.search);
     const urlSessionId = urlParams.get('session');
     
-    let initialSessionId: string;
     if (urlSessionId) {
-      // Use session from URL (shared link)
-      initialSessionId = urlSessionId;
+      // Existing session from URL - load it
+      setSessionId(urlSessionId);
       localStorage.setItem('toxicogpt_session', urlSessionId);
-      // Load chat history for this session
       loadChatHistory(urlSessionId);
     } else {
-      // Check localStorage or generate new
+      // Check if there's a session in localStorage with existing chat
       const storedSessionId = localStorage.getItem('toxicogpt_session');
-      initialSessionId = storedSessionId || uuidv4();
-      if (!storedSessionId) {
-        localStorage.setItem('toxicogpt_session', initialSessionId);
-      } else {
-        // Load history for stored session
-        loadChatHistory(initialSessionId);
+      if (storedSessionId) {
+        // Check if this session has messages in database
+        loadChatHistory(storedSessionId).then((hasMessages) => {
+          if (hasMessages) {
+            // Session has history, keep it and update URL
+            setSessionId(storedSessionId);
+            const newUrl = `${window.location.pathname}?session=${storedSessionId}`;
+            window.history.replaceState({}, '', newUrl);
+          } else {
+            // Empty session, clear it - user will get new session on first message
+            localStorage.removeItem('toxicogpt_session');
+            setSessionId('');
+          }
+        });
       }
+      // If no session at all, leave empty - will be created on first message
     }
-    
-    // ALWAYS update URL to include session ID immediately
-    setSessionId(initialSessionId);
-    const newUrl = `${window.location.pathname}?session=${initialSessionId}`;
-    window.history.replaceState({}, '', newUrl);
 
     // Check API health (with retry)
   const checkHealth = async () => {
@@ -155,7 +157,7 @@ export default function Home() {
     return () => window.removeEventListener('message', handleMessage);
   }, [sessionId]);
 
-  const loadChatHistory = async (sid: string) => {
+  const loadChatHistory = async (sid: string): Promise<boolean> => {
     setLoadingHistory(true);
     try {
       const history = await apiService.getChatHistory(sid, 100);
@@ -180,9 +182,12 @@ export default function Home() {
           });
         }
         setMessages(loadedMessages);
+        return true; // Has messages
       }
+      return false; // No messages
     } catch (err) {
       console.error('Failed to load chat history:', err);
+      return false;
     } finally {
       setLoadingHistory(false);
     }
@@ -190,6 +195,17 @@ export default function Home() {
 
   const handleSend = async (message: string) => {
     setError(null);
+    
+    // Create session on FIRST message if it doesn't exist
+    let currentSessionId = sessionId;
+    if (!currentSessionId) {
+      currentSessionId = uuidv4();
+      setSessionId(currentSessionId);
+      localStorage.setItem('toxicogpt_session', currentSessionId);
+      // Update URL with new session ID
+      const newUrl = `${window.location.pathname}?session=${currentSessionId}`;
+      window.history.replaceState({}, '', newUrl);
+    }
     
     // Add user message
     const userMessage: Message = {
@@ -201,7 +217,7 @@ export default function Home() {
     setLoading(true);
 
       try {
-      const response = await apiService.sendMessage(message, sessionId, userMode);
+      const response = await apiService.sendMessage(message, currentSessionId, userMode);
 
       // Add assistant response (include consumer summary when returned by backend)
       const assistantMessage: Message = {
@@ -219,7 +235,7 @@ export default function Home() {
         try {
           window.parent.postMessage({
             type: 'SESSION_UPDATE',
-            sessionId: sessionId
+            sessionId: currentSessionId
           }, '*');
         } catch (e) {
           // Ignore if postMessage fails
@@ -233,13 +249,12 @@ export default function Home() {
   };
 
   const handleClearChat = () => {
-    if (confirm('Are you sure you want to clear the chat history?')) {
+    if (confirm('Are you sure you want to start a new chat?')) {
       setMessages([]);
-      const newSessionId = uuidv4();
-      setSessionId(newSessionId);
-      localStorage.setItem('toxicogpt_session', newSessionId);
-      // Update URL with new session
-      window.history.pushState({}, '', `/?session=${newSessionId}`);
+      setSessionId('');
+      localStorage.removeItem('toxicogpt_session');
+      // Clear URL parameter
+      window.history.pushState({}, '', '/');
     }
   };
 
