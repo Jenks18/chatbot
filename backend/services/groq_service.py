@@ -34,12 +34,12 @@ and detailed chemical/biological pathways. Include citations and evidence qualit
 
 
 class GroqModelService:
-    """Service for interacting with Groq API using compound model with tools"""
+    """Service for interacting with Groq API using the configured model"""
     
     def __init__(self):
         self.api_key = os.getenv("GROQ_API_KEY")
-        # Use llama-3.3-70b-versatile - fastest and most reliable model
-        self.model_name = "llama-3.3-70b-versatile"
+        # Use model from environment variable, default to groq/compound
+        self.model_name = os.getenv("GROQ_MODEL", "groq/compound")
         is_vercel = os.getenv('VERCEL') == '1'
         
         if not self.api_key:
