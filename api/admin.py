@@ -22,7 +22,7 @@ class handler(BaseHTTPRequestHandler):
             # Import database
             from backend.db.database import SessionLocal
             from backend.db.models import ChatLog, Session as SessionModel, Interaction
-            from sqlalchemy import func, desc
+            from sqlalchemy import func, desc, text
             
             db = SessionLocal()
             
@@ -30,7 +30,7 @@ class handler(BaseHTTPRequestHandler):
             if '/api/admin/health' in self.path:
                 # Health check
                 try:
-                    db.execute("SELECT 1")
+                    db.execute(text("SELECT 1"))
                     db_status = "connected"
                 except Exception as e:
                     db_status = f"error: {str(e)}"

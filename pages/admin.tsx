@@ -60,11 +60,13 @@ export default function Admin() {
         apiService.getStatsOverview(),
         // note: interactions fetched separately to keep initial load fast
       ]);
-      setSessions(sessionsData);
-      setStats(statsData);
+      setSessions(Array.isArray(sessionsData) ? sessionsData : []);
+      setStats(statsData || null);
       loadInteractions();
     } catch (error) {
       console.error('Failed to load admin data:', error);
+      setSessions([]);
+      setStats(null);
     } finally {
       setLoading(false);
     }
@@ -73,9 +75,10 @@ export default function Admin() {
   const loadInteractions = async () => {
     try {
       const data = await apiService.getInteractions(200);
-      setInteractions(data);
+      setInteractions(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Failed to load interactions', err);
+      setInteractions([]);
     }
   };
 
