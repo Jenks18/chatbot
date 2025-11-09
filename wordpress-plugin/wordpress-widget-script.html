@@ -134,6 +134,7 @@
     var chatClose = document.getElementById('chat-close');
     var chatOpenNew = document.getElementById('chat-open-new');
     var chatIframe = document.getElementById('chat-iframe');
+    var chatUrl = 'https://chatbot-y1ar.vercel.app/';
     
     // Open chat modal
     chatBubble.addEventListener('click', function() {
@@ -147,27 +148,25 @@
     
     // Open in new window with session transfer
     chatOpenNew.addEventListener('click', function() {
-      // Request session ID from iframe via postMessage
-      chatIframe.contentWindow.postMessage(
-        { type: 'GET_SESSION_ID' }, 
-        'https://chatbot-y1ar.vercel.app'
-      );
+      // Request session ID from iframe
+      var message = { type: 'GET_SESSION_ID' };
+      chatIframe.contentWindow.postMessage(message, chatUrl);
     });
     
-    // Listen for session ID response from iframe
+    // Listen for session ID response
     window.addEventListener('message', function(event) {
-      // Verify origin for security
-      if (event.origin !== 'https://chatbot-y1ar.vercel.app') {
+      // Verify origin
+      if (event.origin !== chatUrl.replace(/\/$/, '')) {
         return;
       }
       
-      if (event.data.type === 'SESSION_ID_RESPONSE') {
+      if (event.data && event.data.type === 'SESSION_ID_RESPONSE') {
         var sessionId = event.data.sessionId;
-        var newWindowUrl = 'https://chatbot-y1ar.vercel.app/';
+        var url = chatUrl;
         if (sessionId) {
-          newWindowUrl += '?session=' + sessionId;
+          url = url + '?session=' + encodeURIComponent(sessionId);
         }
-        window.open(newWindowUrl, '_blank');
+        window.open(url, '_blank');
         chatModal.classList.remove('active');
       }
     });
