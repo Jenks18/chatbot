@@ -156,9 +156,11 @@ class GroqModelService:
     
     def __init__(self):
         self.api_key = os.getenv("GROQ_API_KEY")
-        # Use llama-3.3-70b-versatile instead of compound model to avoid rate limits
-        # This model has much higher token limits and better availability
-        self.model_name = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+        # Use mixtral-8x7b-32768 - it has the highest rate limits on Groq
+        # Rate limits: 18,000 TPM (tokens per minute) vs 8,000 for gpt-oss-120b
+        # Also has 32k context window which is excellent for medical queries
+        # The compound model routes to rate-limited models, so we use mixtral directly
+        self.model_name = os.getenv("GROQ_MODEL", "mixtral-8x7b-32768")
         is_vercel = os.getenv('VERCEL') == '1'
         
         if not self.api_key:
@@ -235,19 +237,30 @@ class GroqModelService:
         messages.append({"role": "user", "content": user_content})
         
         try:
+            # For compound model, use specific configuration
+            api_params = {
+                "model": self.model_name,
+                "messages": messages,
+                "temperature": temperature,
+                "max_tokens": max_tokens,
+                "top_p": 1,
+                "stream": True,
+                "stop": None
+            }
+            
+            # If using compound model, add tools configuration
+            if "compound" in self.model_name:
+                # Compound model has built-in tools, no need to explicitly enable
+                # The model will automatically use web_search, code_interpreter, and visit_website
+                pass
+            
             # Run synchronous Groq API call in thread pool (SDK is not async)
             loop = asyncio.get_event_loop()
             completion = await loop.run_in_executor(
                 None,  # Use default executor
                 partial(
                     self.client.chat.completions.create,
-                    model=self.model_name,
-                    messages=messages,
-                    temperature=temperature,
-                    max_tokens=max_tokens,
-                    top_p=1,
-                    stream=True,
-                    stop=None
+                    **api_params
                 )
             )
             
