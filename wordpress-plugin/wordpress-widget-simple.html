@@ -1,0 +1,135 @@
+<!-- ToxicoGPT Chat Widget - WordPress Safe Version -->
+<style>
+  #chat-bubble {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    font-size: 28px;
+    z-index: 999998;
+    transition: transform 0.3s, box-shadow 0.3s;
+  }
+
+  #chat-bubble:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+  }
+
+  #chat-modal {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 999999;
+    backdrop-filter: blur(4px);
+  }
+
+  #chat-modal.active {
+    display: flex;
+  }
+
+  #chat-container {
+    width: 90%;
+    max-width: 450px;
+    height: 80%;
+    max-height: 700px;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  #chat-iframe {
+    width: 100%;
+    height: calc(100% - 50px);
+    border: none;
+  }
+
+  #chat-header {
+    height: 50px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 15px;
+    color: white;
+  }
+
+  #chat-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  #chat-actions {
+    display: flex;
+    gap: 10px;
+  }
+
+  #chat-open-new, #chat-close {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    color: white;
+    font-weight: 600;
+    transition: background 0.2s;
+    font-size: 13px;
+  }
+
+  #chat-open-new:hover, #chat-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
+
+  @media (max-width: 768px) {
+    #chat-container {
+      width: 100%;
+      height: 100%;
+      max-height: 100%;
+      border-radius: 0;
+    }
+  }
+</style>
+
+<!-- Chat Widget HTML -->
+<div id="chat-bubble" onclick="document.getElementById('chat-modal').classList.add('active')" title="Chat with us">💬</div>
+
+<div id="chat-modal" onclick="if(event.target===this) this.classList.remove('active')">
+  <div id="chat-container">
+    <div id="chat-header">
+      <h3>Chat with us</h3>
+      <div id="chat-actions">
+        <button id="chat-open-new" onclick="window.open('https://chatbot-y1ar.vercel.app/', '_blank'); document.getElementById('chat-modal').classList.remove('active')" title="Open in new window">⧉ Open Full</button>
+        <button id="chat-close" onclick="document.getElementById('chat-modal').classList.remove('active')" title="Close">✕</button>
+      </div>
+    </div>
+    <iframe id="chat-iframe" src="https://chatbot-y1ar.vercel.app/" allow="microphone; camera"></iframe>
+  </div>
+</div>
+
+<script>
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    var modal = document.getElementById('chat-modal');
+    if (modal.classList.contains('active')) {
+      modal.classList.remove('active');
+    }
+  }
+});
+</script>

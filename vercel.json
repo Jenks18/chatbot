@@ -2,13 +2,27 @@
   "framework": "nextjs",
   "rewrites": [
     {
-      "source": "/api/:path*",
-      "destination": "/api/unified"
+      "source": "/api/admin/:path*",
+      "destination": "/api/admin"
+    },
+    {
+      "source": "/api/chat",
+      "destination": "/api/chat"
+    },
+    {
+      "source": "/api/health",
+      "destination": "/api/health"
     }
   ],
   "functions": {
-    "api/unified.py": {
+    "api/admin.py": {
+      "maxDuration": 30
+    },
+    "api/chat.py": {
       "maxDuration": 60
+    },
+    "api/health.py": {
+      "maxDuration": 10
     }
   }
 }
