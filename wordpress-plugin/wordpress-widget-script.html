@@ -135,10 +135,29 @@
     var chatOpenNew = document.getElementById('chat-open-new');
     var chatIframe = document.getElementById('chat-iframe');
     var baseUrl = 'https://chatbot-y1ar.vercel.app/';
+    var iframeLoaded = false;
+    var currentSessionId = null;
+
+    // Initialize iframe with session tracking
+    chatIframe.addEventListener('load', function() {
+      iframeLoaded = true;
+      // Try to extract session from iframe URL after it loads
+      try {
+        var iframeSrc = chatIframe.src;
+        var sessionMatch = iframeSrc.match(/[?&]session=([^&]+)/);
+        if (sessionMatch && sessionMatch[1]) {
+          currentSessionId = sessionMatch[1];
+        }
+      } catch (e) {
+        console.log('Cannot access iframe URL (expected for cross-origin)');
+      }
+    });
 
     // Open chat modal
     chatBubble.addEventListener('click', function() {
       chatModal.classList.add('active');
+      // If iframe hasn't loaded or no session yet, it will use default
+      // The iframe will handle session initialization internally
     });
 
     // Close chat modal
@@ -146,27 +165,58 @@
       chatModal.classList.remove('active');
     });
 
-    // Listen for session ID from iframe
+    // Listen for session ID updates from iframe
     window.addEventListener('message', function(event) {
+      // Security: verify origin
       if (event.origin !== 'https://chatbot-y1ar.vercel.app') return;
       
       var data = event.data;
+      
+      // Handle session ID response
       if (data.type === 'SESSION_ID_RESPONSE') {
-        var sid = data.sessionId;
-        var targetUrl = baseUrl;
-        if (sid) {
-          targetUrl = baseUrl + '?session=' + sid;
-        }
-        window.open(targetUrl, '_blank');
-        chatModal.classList.remove('active');
+        currentSessionId = data.sessionId;
+        console.log('Session ID received:', currentSessionId);
+      }
+      
+      // Handle session update notifications (when user sends messages)
+      if (data.type === 'SESSION_UPDATE') {
+        currentSessionId = data.sessionId;
+        console.log('Session updated:', currentSessionId);
       }
     });
 
-    // Open in new window
+    // Open in new window with current session
     chatOpenNew.addEventListener('click', function() {
-      var msg = {};
-      msg.type = 'GET_SESSION_ID';
+      if (!iframeLoaded) {
+        alert('Please wait for chat to load first');
+        return;
+      }
+
+      // Request current session ID from iframe
+      var msg = { type: 'GET_SESSION_ID' };
       chatIframe.contentWindow.postMessage(msg, baseUrl);
+
+      // Wait a bit for response, then open window
+      setTimeout(function() {
+        var targetUrl = baseUrl;
+        if (currentSessionId) {
+          targetUrl = baseUrl + '?session=' + currentSessionId;
+        } else {
+          // Fallback: try to get session from iframe src
+          try {
+            var iframeSrc = chatIframe.src;
+            var sessionMatch = iframeSrc.match(/[?&]session=([^&]+)/);
+            if (sessionMatch && sessionMatch[1]) {
+              targetUrl = baseUrl + '?session=' + sessionMatch[1];
+            }
+          } catch (e) {
+            console.log('Using base URL without session');
+          }
+        }
+        
+        window.open(targetUrl, '_blank', 'noopener,noreferrer');
+        chatModal.classList.remove('active');
+      }, 300);
     });
 
     // Close on outside click

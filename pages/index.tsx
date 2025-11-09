@@ -22,13 +22,37 @@ export default function Home() {
   const [isHealthy, setIsHealthy] = useState<boolean | null>(null);
   const [healthError, setHealthError] = useState<string | null>(null);
   const [userMode, setUserMode] = useState<'patient' | 'doctor' | 'researcher'>('patient');
+  const [loadingHistory, setLoadingHistory] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Generate session ID
-    const newSessionId = uuidv4();
-    setSessionId(newSessionId);
-    localStorage.setItem('toxicogpt_session', newSessionId);
+    // Check if session ID is in URL (for shared links)
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlSessionId = urlParams.get('session');
+    
+    let initialSessionId: string;
+    if (urlSessionId) {
+      // Use session from URL (shared link)
+      initialSessionId = urlSessionId;
+      localStorage.setItem('toxicogpt_session', urlSessionId);
+      // Load chat history for this session
+      loadChatHistory(urlSessionId);
+    } else {
+      // Check localStorage or generate new
+      const storedSessionId = localStorage.getItem('toxicogpt_session');
+      initialSessionId = storedSessionId || uuidv4();
+      if (!storedSessionId) {
+        localStorage.setItem('toxicogpt_session', initialSessionId);
+      } else {
+        // Load history for stored session
+        loadChatHistory(initialSessionId);
+      }
+    }
+    
+    // ALWAYS update URL to include session ID immediately
+    setSessionId(initialSessionId);
+    const newUrl = `${window.location.pathname}?session=${initialSessionId}`;
+    window.history.replaceState({}, '', newUrl);
 
     // Check API health (with retry)
   const checkHealth = async () => {
@@ -131,6 +155,39 @@ export default function Home() {
     return () => window.removeEventListener('message', handleMessage);
   }, [sessionId]);
 
+  const loadChatHistory = async (sid: string) => {
+    setLoadingHistory(true);
+    try {
+      const history = await apiService.getChatHistory(sid, 100);
+      if (history && history.history && history.history.length > 0) {
+        // Convert chat logs to message format
+        const loadedMessages: Message[] = [];
+        for (const log of history.history) {
+          // Add user message
+          loadedMessages.push({
+            role: 'user',
+            content: log.question,
+            timestamp: new Date(log.created_at),
+          });
+          // Add assistant message
+          loadedMessages.push({
+            role: 'assistant',
+            content: log.answer,
+            timestamp: new Date(log.created_at),
+            evidence: log.extra_metadata?.evidence || undefined,
+            consumerSummary: log.extra_metadata?.consumer_summary || undefined,
+            provenance: log.extra_metadata?.consumer_summary_provenance || undefined,
+          });
+        }
+        setMessages(loadedMessages);
+      }
+    } catch (err) {
+      console.error('Failed to load chat history:', err);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
   const handleSend = async (message: string) => {
     setError(null);
     
@@ -169,6 +226,8 @@ export default function Home() {
       const newSessionId = uuidv4();
       setSessionId(newSessionId);
       localStorage.setItem('toxicogpt_session', newSessionId);
+      // Update URL with new session
+      window.history.pushState({}, '', `/?session=${newSessionId}`);
     }
   };
 
@@ -228,7 +287,12 @@ export default function Home() {
         {/* Chat Area */}
         <main className="flex-1 overflow-y-auto bg-gradient-to-b from-transparent to-slate-950/50">
             <div className="max-w-5xl mx-auto px-6 py-8">
-              {messages.length === 0 ? (
+              {loadingHistory ? (
+                <div className="flex flex-col items-center justify-center py-20">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+                  <p className="mt-4 text-slate-400">Loading conversation history...</p>
+                </div>
+              ) : messages.length === 0 ? (
                 <WelcomeMessage 
                   onSelectCategory={(p) => handleSend(p)} 
                   userMode={userMode}

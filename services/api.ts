@@ -53,6 +53,12 @@ export interface ChatLog {
       isp?: string;
     };
     rag_used?: boolean;
+    evidence?: Array<any>;
+    consumer_summary?: string;
+    consumer_summary_provenance?: {
+      source: string;
+      evidence_ids?: number[];
+    };
   };
 }
 
