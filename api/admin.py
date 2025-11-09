@@ -128,6 +128,84 @@ class handler(BaseHTTPRequestHandler):
                     for i in interactions
                 ]
             
+            elif '/api/admin/sessions/' in self.path and '/history' in self.path:
+                # Get session history - /api/admin/sessions/{session_id}/history
+                path_parts = [p for p in parsed_path.path.split('/') if p]
+                
+                if len(path_parts) < 4:
+                    response = {"error": "Invalid path format. Expected /api/admin/sessions/{session_id}/history"}
+                    self.send_response(400)
+                    self.send_header('Content-Type', 'application/json')
+                    self.send_header('Access-Control-Allow-Origin', '*')
+                    self.end_headers()
+                    self.wfile.write(json.dumps(response).encode())
+                    db.close()
+                    return
+                
+                # Extract session_id (should be at index 3)
+                session_id_index = path_parts.index('sessions') + 1
+                session_id = path_parts[session_id_index] if session_id_index < len(path_parts) else None
+                
+                if not session_id:
+                    response = {"error": "Session ID not provided"}
+                    self.send_response(400)
+                    self.send_header('Content-Type', 'application/json')
+                    self.send_header('Access-Control-Allow-Origin', '*')
+                    self.end_headers()
+                    self.wfile.write(json.dumps(response).encode())
+                    db.close()
+                    return
+                
+                # Get session info
+                session = db.query(SessionModel).filter(
+                    SessionModel.session_id == session_id
+                ).first()
+                
+                if not session:
+                    response = {
+                        "error": "Session not found",
+                        "session_id": session_id,
+                        "messages": []
+                    }
+                    self.send_response(404)
+                    self.send_header('Content-Type', 'application/json')
+                    self.send_header('Access-Control-Allow-Origin', '*')
+                    self.end_headers()
+                    self.wfile.write(json.dumps(response).encode())
+                    db.close()
+                    return
+                
+                # Get all messages for this session
+                messages = db.query(ChatLog).filter(
+                    ChatLog.session_id == session_id
+                ).order_by(ChatLog.created_at).all()
+                
+                response = {
+                    "session_id": session.session_id,
+                    "started_at": str(session.started_at),
+                    "last_active": str(session.last_active),
+                    "user_agent": session.user_agent or "",
+                    "country": session.country,
+                    "city": session.city,
+                    "region": session.region,
+                    "timezone": session.timezone,
+                    "latitude": session.latitude,
+                    "longitude": session.longitude,
+                    "message_count": len(messages),
+                    "messages": [
+                        {
+                            "id": msg.id,
+                            "question": msg.question,
+                            "answer": msg.answer,
+                            "created_at": str(msg.created_at),
+                            "response_time_ms": msg.response_time_ms or 0,
+                            "model_used": msg.model_used or "unknown",
+                            "ip_address": msg.ip_address or ""
+                        }
+                        for msg in messages
+                    ]
+                }
+            
             else:
                 response = {"error": "Unknown endpoint"}
                 self.send_response(404)
