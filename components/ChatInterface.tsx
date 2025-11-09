@@ -32,6 +32,31 @@ const parseCitations = (text: string): { cleanText: string; citations: string[] 
   return { cleanText: text, citations };
 };
 
+const parseReferences = (text: string): Array<{ number: number; citation: string }> => {
+  const referencesMatch = text.match(/References?:\s*\n([\s\S]+)$/i);
+  if (!referencesMatch) return [];
+  
+  const referencesSection = referencesMatch[1];
+  const lines = referencesSection.split('\n');
+  const references: Array<{ number: number; citation: string }> = [];
+  
+  for (const line of lines) {
+    const match = line.match(/^\[(\d+)\]\s*(.+)$/);
+    if (match) {
+      references.push({
+        number: parseInt(match[1]),
+        citation: match[2].trim()
+      });
+    }
+  }
+  
+  return references;
+};
+
+const removeReferencesSection = (text: string): string => {
+  return text.replace(/\n*References?:\s*\n[\s\S]+$/i, '').trim();
+};
+
 export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
   const isUser = message.role === 'user';
   const [viewMode, setViewMode] = React.useState<'simple' | 'technical'>('simple');
@@ -69,9 +94,23 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
     return refs;
   };
 
-  const references = buildReferences();
+  // Get display content and extract references from AI response
   const displayContent = viewMode === 'simple' ? message.consumerSummary : message.content;
-  const paragraphs = formatContent(displayContent || '');
+  const contentWithoutRefs = removeReferencesSection(displayContent || '');
+  const aiReferences = parseReferences(displayContent || '');
+  
+  // Combine evidence-based references with AI-generated references
+  const evidenceRefs = buildReferences();
+  const allReferences = aiReferences.length > 0 
+    ? aiReferences.map(ref => ({ 
+        number: ref.number, 
+        title: ref.citation, 
+        url: '#', 
+        excerpt: undefined 
+      }))
+    : evidenceRefs;
+  
+  const paragraphs = formatContent(contentWithoutRefs);
 
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-8`}>
@@ -115,22 +154,22 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
               ) : (
                 <p className="text-sm text-slate-400 italic">{viewMode === 'simple' ? 'No simplified summary available. Switch to Technical view for the full response.' : 'No content available.'}</p>
               )}
-              {references.length > 0 && (
+              {allReferences.length > 0 && (
                 <div className="mt-6">
                   <button type="button" onClick={() => setShowReferences(!showReferences)} className="flex items-center gap-2 text-sm font-semibold text-blue-400 hover:text-blue-300 transition-colors">
                     <span>{showReferences ? '▼' : '►'}</span>
-                    <span>References ({references.length})</span>
+                    <span>References ({allReferences.length})</span>
                   </button>
                 </div>
               )}
-              {showReferences && references.length > 0 && (
+              {showReferences && allReferences.length > 0 && (
                 <div className="references-list mt-6">
                   <h3 className="text-lg font-bold text-slate-200 mb-4 flex items-center gap-2">
                     <span>📚</span>
                     <span>References</span>
                   </h3>
                   <div className="space-y-3">
-                    {references.map((ref, idx) => (
+                    {allReferences.map((ref, idx) => (
                       <div key={idx} id={`ref-${ref.number}`} className="reference-item">
                         <div className="flex items-start gap-3">
                           <span className="reference-number">{ref.number}</span>

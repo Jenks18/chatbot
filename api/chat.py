@@ -129,6 +129,20 @@ class handler(BaseHTTPRequestHandler):
                     existing_session.last_active = func.now()
                 
                 # Save chat log
+                # Extract references from response
+                import re
+                references = []
+                refs_match = re.search(r'References?:\s*\n([\s\S]+)$', ai_response, re.IGNORECASE)
+                if refs_match:
+                    refs_text = refs_match.group(1)
+                    for line in refs_text.split('\n'):
+                        ref_match = re.match(r'^\[(\d+)\]\s*(.+)$', line.strip())
+                        if ref_match:
+                            references.append({
+                                "number": int(ref_match.group(1)),
+                                "citation": ref_match.group(2).strip()
+                            })
+                
                 chat_log = ChatLog(
                     session_id=session_id,
                     question=user_message,
@@ -139,7 +153,8 @@ class handler(BaseHTTPRequestHandler):
                     user_agent=user_agent,
                     extra_metadata={
                         "consumer_summary": consumer_summary,
-                        "user_mode": user_mode
+                        "user_mode": user_mode,
+                        "references": references
                     }
                 )
                 db.add(chat_log)
