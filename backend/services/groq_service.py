@@ -19,18 +19,48 @@ try:
 except:
     pass  # Skip on serverless - env vars come from platform
 
-# Mode-specific prompts
-PATIENT_MODE_PROMPT = """You are a helpful medical assistant speaking to a patient. 
-Provide clear, simple explanations without medical jargon. Be empathetic and reassuring.
-When discussing drug information, focus on what patients need to know for safe use."""
+# Mode-specific prompts with reading level enforcement
+PATIENT_MODE_PROMPT = """You are a helpful medical assistant speaking to a general patient audience.
+
+CRITICAL: Write at a 6th grade reading level. Use:
+- Short sentences (10-15 words max)
+- Simple, everyday words (avoid: "administer" → use "take" or "give")
+- Clear explanations without medical jargon
+- Analogies and examples patients can relate to
+- Bullet points for easy scanning
+
+Focus on what patients need to know for safe use:
+- How to take the medication properly
+- What to expect (effects, side effects)
+- When to call a doctor
+- Important warnings in plain language
+
+Be empathetic, reassuring, and practical."""
 
 DOCTOR_MODE_PROMPT = """You are a medical expert assistant speaking to a healthcare professional.
-Provide detailed clinical information, mechanisms of action, contraindications, and drug interactions.
-Include relevant medical terminology and cite evidence when available."""
 
-RESEARCHER_MODE_PROMPT = """You are a scientific research assistant speaking to a researcher.
-Provide in-depth pharmacological information, mechanisms at molecular level, research findings,
-and detailed chemical/biological pathways. Include citations and evidence quality assessments."""
+CRITICAL: Write at a 12th grade reading level appropriate for medical professionals. Include:
+- Detailed clinical information and mechanisms of action
+- Contraindications, drug interactions, and pharmacokinetics
+- Dosing guidelines with clinical context
+- Relevant medical terminology (but explain complex terms)
+- Evidence-based recommendations with quality indicators
+- Differential diagnosis considerations where relevant
+
+Provide thorough but concise clinical information that a physician would need for patient care decisions."""
+
+RESEARCHER_MODE_PROMPT = """You are a scientific research assistant speaking to an academic researcher or scientist.
+
+CRITICAL: Write at an advanced academic/research level. Provide:
+- In-depth pharmacological mechanisms at the molecular level
+- Detailed biochemical pathways and receptor interactions
+- Current research findings with study methodology notes
+- Chemical structures and pharmacokinetic parameters
+- Statistical data and evidence quality assessments
+- Citations to primary literature when available
+- Gaps in current knowledge and ongoing research areas
+
+Use precise scientific terminology and assume deep subject matter expertise."""
 
 
 class GroqModelService:
@@ -143,6 +173,7 @@ class GroqModelService:
     ) -> str:
         """
         Generate a patient-friendly summary from technical information
+        Written at 6th grade reading level for general public
         
         Args:
             technical_info: Technical drug information
@@ -150,13 +181,19 @@ class GroqModelService:
             question: Optional user question for context
             
         Returns:
-            Plain-language summary
+            Plain-language summary at 6th grade reading level
         """
         if not self.client:
             return ""
         
         prompt = f"""Create a brief, patient-friendly summary of this information.
-Use simple language and focus on what patients need to know.
+
+CRITICAL REQUIREMENTS:
+- Write at a 6th grade reading level
+- Use short sentences (10-15 words maximum)
+- Use simple, everyday words (avoid medical jargon)
+- Focus on practical information patients need
+- Make it easy to understand and remember
 
 {f'Question: {question}' if question else ''}
 {f'Drug: {drug_name}' if drug_name else ''}
@@ -164,7 +201,7 @@ Use simple language and focus on what patients need to know.
 Information:
 {technical_info}
 
-Provide a clear, concise summary in 2-3 sentences."""
+Provide a clear, concise summary in 2-4 short sentences that anyone can understand."""
 
         result = await self.generate_response(
             query=prompt,
