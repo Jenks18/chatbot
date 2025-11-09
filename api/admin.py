@@ -80,54 +80,6 @@ class handler(BaseHTTPRequestHandler):
                     "daily_queries": [{"date": str(date), "count": count} for date, count in daily_queries]
                 }
             
-            elif '/api/admin/sessions' in self.path:
-                # Get all sessions
-                limit = int(query_params.get('limit', [100])[0])
-                
-                sessions = db.query(SessionModel).order_by(desc(SessionModel.last_active)).limit(limit).all()
-                
-                result = []
-                for session in sessions:
-                    message_count = db.query(func.count(ChatLog.id)).filter(
-                        ChatLog.session_id == session.session_id
-                    ).scalar() or 0
-                    
-                    first_message = db.query(ChatLog).filter(
-                        ChatLog.session_id == session.session_id
-                    ).order_by(ChatLog.created_at).first()
-                    
-                    result.append({
-                        "session_id": session.session_id,
-                        "started_at": str(session.started_at),
-                        "last_active": str(session.last_active),
-                        "message_count": message_count,
-                        "user_agent": session.user_agent or "",
-                        "country": session.country,
-                        "city": session.city,
-                        "first_message_preview": first_message.question[:100] if first_message else None
-                    })
-                
-                response = result
-            
-            elif '/api/admin/interactions' in self.path:
-                # Get interactions
-                limit = int(query_params.get('limit', [100])[0])
-                
-                interactions = db.query(Interaction).limit(limit).all()
-                response = [
-                    {
-                        "id": i.id,
-                        "drug_name": i.drug_name,
-                        "title": i.title,
-                        "summary": i.summary,
-                        "mechanism": i.mechanism,
-                        "food_groups": i.food_groups,
-                        "recommended_actions": i.recommended_actions,
-                        "evidence_quality": i.evidence_quality
-                    }
-                    for i in interactions
-                ]
-            
             elif '/api/admin/sessions/' in self.path and '/history' in self.path:
                 # Get session history - /api/admin/sessions/{session_id}/history
                 path_parts = [p for p in parsed_path.path.split('/') if p]
@@ -205,6 +157,54 @@ class handler(BaseHTTPRequestHandler):
                         for msg in messages
                     ]
                 }
+            
+            elif '/api/admin/sessions' in self.path:
+                # Get all sessions (must come AFTER the history check)
+                limit = int(query_params.get('limit', [100])[0])
+                
+                sessions = db.query(SessionModel).order_by(desc(SessionModel.last_active)).limit(limit).all()
+                
+                result = []
+                for session in sessions:
+                    message_count = db.query(func.count(ChatLog.id)).filter(
+                        ChatLog.session_id == session.session_id
+                    ).scalar() or 0
+                    
+                    first_message = db.query(ChatLog).filter(
+                        ChatLog.session_id == session.session_id
+                    ).order_by(ChatLog.created_at).first()
+                    
+                    result.append({
+                        "session_id": session.session_id,
+                        "started_at": str(session.started_at),
+                        "last_active": str(session.last_active),
+                        "message_count": message_count,
+                        "user_agent": session.user_agent or "",
+                        "country": session.country,
+                        "city": session.city,
+                        "first_message_preview": first_message.question[:100] if first_message else None
+                    })
+                
+                response = result
+            
+            elif '/api/admin/interactions' in self.path:
+                # Get interactions
+                limit = int(query_params.get('limit', [100])[0])
+                
+                interactions = db.query(Interaction).limit(limit).all()
+                response = [
+                    {
+                        "id": i.id,
+                        "drug_name": i.drug_name,
+                        "title": i.title,
+                        "summary": i.summary,
+                        "mechanism": i.mechanism,
+                        "food_groups": i.food_groups,
+                        "recommended_actions": i.recommended_actions,
+                        "evidence_quality": i.evidence_quality
+                    }
+                    for i in interactions
+                ]
             
             else:
                 response = {"error": "Unknown endpoint"}
