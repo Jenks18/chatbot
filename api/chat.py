@@ -147,7 +147,7 @@ class handler(BaseHTTPRequestHandler):
                     session_id=session_id,
                     question=user_message,
                     answer=ai_response,
-                    model_used="groq/mixtral-8x7b-32768",
+                    model_used="groq/compound+free-apis",
                     response_time_ms=response_time_ms,
                     ip_address=client_ip,
                     user_agent=user_agent,
@@ -169,7 +169,7 @@ class handler(BaseHTTPRequestHandler):
                 "answer": ai_response,
                 "consumer_summary": consumer_summary,
                 "session_id": session_id,
-                "model_used": "groq/mixtral-8x7b-32768",
+                "model_used": "groq/compound+free-apis",
                 "response_time_ms": response_time_ms,
                 "sources": []
             }

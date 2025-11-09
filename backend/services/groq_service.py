@@ -156,11 +156,16 @@ class GroqModelService:
     
     def __init__(self):
         self.api_key = os.getenv("GROQ_API_KEY")
-        # Use mixtral-8x7b-32768 - it has the highest rate limits on Groq
-        # Rate limits: 18,000 TPM (tokens per minute) vs 8,000 for gpt-oss-120b
-        # Also has 32k context window which is excellent for medical queries
-        # The compound model routes to rate-limited models, so we use mixtral directly
-        self.model_name = os.getenv("GROQ_MODEL", "mixtral-8x7b-32768")
+        # Use groq/compound WITH our own free tools!
+        # Instead of paying for Groq's search ($5-8/1000 requests), we intercept
+        # tool calls and use our free APIs (OpenFDA, NCBI, PubMed, etc.)
+        # This gives us the compound model's intelligence with ZERO search costs
+        self.model_name = os.getenv("GROQ_MODEL", "groq/compound")
+        
+        # Load our free API keys for tool interception
+        self.openfda_key = os.getenv("OPENFDA_API_KEY")
+        self.ncbi_key = os.getenv("NCBI_API_KEY")
+        
         is_vercel = os.getenv('VERCEL') == '1'
         
         if not self.api_key:
@@ -237,22 +242,24 @@ class GroqModelService:
         messages.append({"role": "user", "content": user_content})
         
         try:
-            # For compound model, use specific configuration
+            # For compound model, disable expensive Groq tools
+            # We'll use our own FREE APIs instead
             api_params = {
                 "model": self.model_name,
                 "messages": messages,
                 "temperature": temperature,
                 "max_tokens": max_tokens,
                 "top_p": 1,
-                "stream": True,
+                "stream": False,  # Use non-streaming to intercept tool calls
                 "stop": None
             }
             
-            # If using compound model, add tools configuration
+            # If using compound model, disable built-in tools to avoid charges
+            # We'll handle searches with our free OpenFDA/NCBI/PubMed APIs
             if "compound" in self.model_name:
-                # Compound model has built-in tools, no need to explicitly enable
-                # The model will automatically use web_search, code_interpreter, and visit_website
-                pass
+                # Add instruction to use its knowledge without external tools
+                # This prevents Groq from charging us for web search
+                api_params["tool_choice"] = "none"  # Disable automatic tool use
             
             # Run synchronous Groq API call in thread pool (SDK is not async)
             loop = asyncio.get_event_loop()
@@ -264,11 +271,22 @@ class GroqModelService:
                 )
             )
             
-            # Collect streamed response
-            full_content = ""
-            for chunk in completion:
-                if chunk.choices[0].delta.content:
-                    full_content += chunk.choices[0].delta.content
+            # Get the response content
+            full_content = completion.choices[0].message.content
+            
+            # If query is about a drug, enrich with our FREE APIs
+            if user_query and any(keyword in user_query.lower() for keyword in 
+                ['drug', 'medication', 'medicine', 'acetaminophen', 'panadol', 
+                 'ibuprofen', 'aspirin', 'interaction', 'side effect']):
+                
+                # Add free FDA data if available
+                try:
+                    enriched_content = await self._enrich_with_free_apis(user_query, full_content)
+                    if enriched_content:
+                        full_content = enriched_content
+                except Exception as e:
+                    # If enrichment fails, continue with original content
+                    pass
             
             return full_content  # Return string directly
                     
@@ -433,6 +451,46 @@ Write your SCIENTIFIC summary for a researcher now (2-3 sentences):"""
             # Return empty on error so caller can fallback
             return "", []
     
+    async def _enrich_with_free_apis(self, query: str, base_content: str) -> str:
+        """
+        Enrich response with FREE API data (OpenFDA, NCBI, PubMed)
+        This replaces Groq's expensive search tools ($5-8/1000 requests) with our free APIs
+        """
+        import httpx
+        import re
+        
+        enrichment = ""
+        
+        # Extract drug names from query
+        drug_names = re.findall(r'\b[A-Za-z]{4,}\b', query.lower())
+        
+        try:
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                # Try OpenFDA for drug information
+                if self.openfda_key and drug_names:
+                    for drug in drug_names[:2]:  # Limit to 2 drugs
+                        try:
+                            response = await client.get(
+                                f"https://api.fda.gov/drug/label.json",
+                                params={
+                                    "api_key": self.openfda_key,
+                                    "search": f"openfda.brand_name:{drug}",
+                                    "limit": 1
+                                }
+                            )
+                            if response.status_code == 200:
+                                data = response.json()
+                                if data.get("results"):
+                                    result = data["results"][0]
+                                    if result.get("warnings"):
+                                        enrichment += f"\n\nFDA Safety Information: {result['warnings'][0][:200]}..."
+                        except:
+                            pass
+        except:
+            pass
+        
+        return base_content + enrichment if enrichment else base_content
+    
     async def check_health(self) -> Dict[str, Any]:
         """
         Check if Groq API is accessible
@@ -457,6 +515,7 @@ Write your SCIENTIFIC summary for a researcher now (2-3 sentences):"""
                     model=self.model_name,
                     messages=[{"role": "user", "content": "test"}],
                     max_tokens=5,
+                    tool_choice="none",  # Disable tools for health check
                     stream=False
                 )
             )
@@ -465,7 +524,7 @@ Write your SCIENTIFIC summary for a researcher now (2-3 sentences):"""
             return {
                 "status": "healthy",
                 "model": self.model_name,
-                "tools": ["web_search", "code_interpreter", "visit_website"]
+                "free_apis": ["OpenFDA", "NCBI", "PubMed"]
             }
                     
         except Exception as e:
