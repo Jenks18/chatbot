@@ -213,6 +213,18 @@ export default function Home() {
         evidence: response.evidence,
       };
       setMessages((prev) => [...prev, assistantMessage]);
+      
+      // Notify parent window (WordPress widget) that session is active
+      if (window.parent !== window) {
+        try {
+          window.parent.postMessage({
+            type: 'SESSION_UPDATE',
+            sessionId: sessionId
+          }, '*');
+        } catch (e) {
+          // Ignore if postMessage fails
+        }
+      }
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to get response. Please try again.');
     } finally {
