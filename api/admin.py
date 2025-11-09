@@ -30,11 +30,37 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/api/admin/health")
+async def admin_health():
+    """Health check for admin API"""
+    db = None
+    try:
+        from backend.db.database import SessionLocal, DATABASE_URL
+        db = SessionLocal()
+        # Try a simple query
+        db.execute("SELECT 1")
+        db_status = "connected"
+        db_url_preview = DATABASE_URL[:30] + "..." if len(DATABASE_URL) > 30 else DATABASE_URL
+    except Exception as e:
+        db_status = f"error: {str(e)}"
+        db_url_preview = "unavailable"
+    finally:
+        if db:
+            db.close()
+    
+    return {
+        "status": "ok",
+        "database": db_status,
+        "database_url_preview": db_url_preview
+    }
+
 @app.get("/api/admin/logs")
 async def get_all_logs(limit: int = Query(100, ge=1, le=1000), offset: int = Query(0, ge=0)):
     """Get all chat logs with pagination"""
+    db = None
     try:
-        db = next(get_db())
+        from backend.db.database import SessionLocal
+        db = SessionLocal()
         logs = db.query(ChatLog).order_by(desc(ChatLog.created_at)).offset(offset).limit(limit).all()
         result = [
             {
@@ -50,17 +76,21 @@ async def get_all_logs(limit: int = Query(100, ge=1, le=1000), offset: int = Que
             }
             for log in logs
         ]
-        db.close()
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    finally:
+        if db:
+            db.close()
 
 @app.get("/api/admin/stats/overview")
 async def get_stats_overview():
     """Get overview statistics"""
+    db = None
     try:
         from datetime import datetime, timedelta
-        db = next(get_db())
+        from backend.db.database import SessionLocal
+        db = SessionLocal()
         
         total_queries = db.query(func.count(ChatLog.id)).scalar() or 0
         unique_sessions = db.query(func.count(func.distinct(ChatLog.session_id))).scalar() or 0
@@ -78,16 +108,20 @@ async def get_stats_overview():
             "avg_response_time_ms": round(avg_response_time, 2),
             "daily_queries": [{"date": str(date), "count": count} for date, count in daily_queries]
         }
-        db.close()
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    finally:
+        if db:
+            db.close()
 
 @app.get("/api/admin/sessions")
 async def get_all_sessions(limit: int = Query(100, ge=1, le=500)):
     """Get all sessions with message counts"""
+    db = None
     try:
-        db = next(get_db())
+        from backend.db.database import SessionLocal
+        db = SessionLocal()
         
         # Get sessions
         sessions = db.query(SessionModel).order_by(desc(SessionModel.last_active)).limit(limit).all()
@@ -113,21 +147,24 @@ async def get_all_sessions(limit: int = Query(100, ge=1, le=500)):
                 "first_message_preview": first_message.question[:100] if first_message else None
             })
         
-        db.close()
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    finally:
+        if db:
+            db.close()
 
 @app.get("/api/admin/sessions/{session_id}/history")
 async def get_session_history(session_id: str):
     """Get full conversation history for a session"""
+    db = None
     try:
-        db = next(get_db())
+        from backend.db.database import SessionLocal
+        db = SessionLocal()
         
         session = db.query(SessionModel).filter(SessionModel.session_id == session_id).first()
         
         if not session:
-            db.close()
             raise HTTPException(status_code=404, detail="Session not found")
         
         messages = db.query(ChatLog).filter(
@@ -155,18 +192,22 @@ async def get_session_history(session_id: str):
                 for msg in messages
             ]
         }
-        db.close()
         return result
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    finally:
+        if db:
+            db.close()
 
 @app.get("/api/admin/interactions")
 async def list_interactions(limit: int = Query(100, ge=1, le=1000)):
     """List stored interactions"""
+    db = None
     try:
-        db = next(get_db())
+        from backend.db.database import SessionLocal
+        db = SessionLocal()
         interactions = db.query(Interaction).limit(limit).all()
         result = [
             {
@@ -181,10 +222,12 @@ async def list_interactions(limit: int = Query(100, ge=1, le=1000)):
             }
             for i in interactions
         ]
-        db.close()
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    finally:
+        if db:
+            db.close()
 
 # Export handler for Vercel
 handler = app
