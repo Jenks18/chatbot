@@ -177,7 +177,7 @@ class GroqModelService:
         question: str = None,  # Alias for query
         context: str = "",
         user_mode: str = "patient",
-        max_tokens: int = 2000,
+        max_tokens: int = 1500,  # Reduced from 2000 to prevent "too large" errors
         temperature: float = 0.7,
         enable_tools: bool = True
     ) -> str:  # Return string directly like old service
@@ -255,49 +255,85 @@ class GroqModelService:
         self,
         technical_info: str,
         drug_name: str = "",
-        question: str = ""  # Added for compatibility
+        question: str = "",
+        user_mode: str = "patient"  # Add user_mode parameter
     ) -> str:
         """
-        Generate a patient-friendly summary from technical information
-        Written at 6th grade reading level for general public
+        Generate mode-appropriate simplified summary from technical information
         
         Args:
             technical_info: Technical drug information
             drug_name: Name of the drug
             question: Optional user question for context
+            user_mode: patient/doctor/researcher to customize summary level
             
         Returns:
-            Plain-language summary at 6th grade reading level
+            Simplified summary appropriate for the user mode
         """
         if not self.client:
             return ""
         
-        prompt = f"""Create a brief, patient-friendly summary of this information.
+        # Mode-specific summary prompts
+        if user_mode == "patient":
+            prompt = f"""Create a very brief, patient-friendly summary.
 
-CRITICAL REQUIREMENTS:
-- Write at a 6th grade reading level
-- Use short sentences (10-15 words maximum)
-- Use simple, everyday words (avoid medical jargon)
-- Focus on practical information patients need
-- Make it easy to understand and remember
+REQUIREMENTS:
+- Write for 6th graders
+- Use 2-4 SHORT sentences (10-15 words each)
+- Use simple everyday words
+- Focus on: what it does, how to use it, key warning
 
 {f'Question: {question}' if question else ''}
 {f'Drug: {drug_name}' if drug_name else ''}
 
 Information:
-{technical_info}
+{technical_info[:1000]}
 
-Provide a clear, concise summary in 2-4 short sentences that anyone can understand."""
+Provide ONLY the simple summary (no headers, no formatting)."""
+            
+        elif user_mode == "doctor":
+            prompt = f"""Create a concise clinical summary for physicians.
+
+REQUIREMENTS:
+- 2-3 sentences maximum
+- Key clinical points only (indication, dosing, major contraindication)
+- Use medical terminology
+- Actionable and concise
+
+{f'Question: {question}' if question else ''}
+{f'Drug: {drug_name}' if drug_name else ''}
+
+Information:
+{technical_info[:1200]}
+
+Provide ONLY the clinical summary."""
+            
+        else:  # researcher
+            prompt = f"""Create a scientific summary for researchers.
+
+REQUIREMENTS:
+- 2-3 sentences maximum
+- Focus on mechanisms, pathways, and research gaps
+- Include quantitative data if available
+- Academic tone
+
+{f'Question: {question}' if question else ''}
+{f'Drug: {drug_name}' if drug_name else ''}
+
+Information:
+{technical_info[:1200]}
+
+Provide ONLY the scientific summary."""
 
         result = await self.generate_response(
             query=prompt,
-            user_mode="patient",
-            max_tokens=500,
+            user_mode=user_mode,
+            max_tokens=300,  # Keep summaries short
             temperature=0.5,
-            enable_tools=False  # Don't need tools for summaries
+            enable_tools=False
         )
         
-        return result  # Already a string
+        return result
     
     async def generate_consumer_summary_with_provenance(
         self,

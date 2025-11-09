@@ -89,12 +89,13 @@ class handler(BaseHTTPRequestHandler):
                 )
             )
             
-            # Generate simple consumer summary
+            # Generate simple consumer summary (mode-appropriate)
             consumer_summary = loop.run_until_complete(
                 model_service.generate_consumer_summary(
                     technical_info=ai_response,
                     drug_name="",
-                    question=user_message
+                    question=user_message,
+                    user_mode=user_mode  # Pass user_mode for appropriate summary
                 )
             )
             

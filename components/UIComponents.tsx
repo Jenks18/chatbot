@@ -3,14 +3,14 @@ import React from 'react';
 export const LoadingSpinner: React.FC = () => {
   return (
     <div className="flex justify-start mb-6">
-      <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl px-6 py-5 border border-slate-700">
-        <div className="flex items-center gap-3">
-          <div className="flex gap-1.5">
-            <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-bounce shadow-lg shadow-emerald-500/50" style={{ animationDelay: '0ms' }}></div>
-            <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-bounce shadow-lg shadow-emerald-500/50" style={{ animationDelay: '150ms' }}></div>
-            <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-bounce shadow-lg shadow-emerald-500/50" style={{ animationDelay: '300ms' }}></div>
+      <div className="bg-white rounded-xl px-5 py-4 border border-gray-200 shadow-sm">
+        <div className="flex items-center gap-2.5">
+          <div className="flex gap-1">
+            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
           </div>
-          <span className="text-sm text-slate-300 font-medium">ToxicoGPT is analyzing...</span>
+          <span className="text-sm text-gray-700 font-medium">ToxicoGPT is analyzing...</span>
         </div>
       </div>
     </div>
@@ -24,18 +24,18 @@ interface ErrorMessageProps {
 
 export const ErrorMessage: React.FC<ErrorMessageProps> = ({ message, onRetry }) => {
   return (
-    <div className="bg-red-900/20 border-2 border-red-800/50 rounded-2xl p-5 mb-6 backdrop-blur-sm">
-      <div className="flex items-start gap-4">
-        <div className="flex items-center justify-center w-10 h-10 rounded-full bg-red-900/40">
-          <span className="text-red-400 text-xl">⚠️</span>
+    <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+      <div className="flex items-start gap-3">
+        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-red-100">
+          <span className="text-red-600 text-lg">⚠️</span>
         </div>
         <div className="flex-1">
-          <h4 className="text-sm font-semibold text-red-300 mb-1">Error</h4>
-          <p className="text-sm text-red-200/90 leading-relaxed">{message}</p>
+          <h4 className="text-sm font-semibold text-red-900 mb-1">Error</h4>
+          <p className="text-sm text-red-700 leading-relaxed">{message}</p>
           {onRetry && (
             <button
               onClick={onRetry}
-              className="mt-3 px-4 py-2 text-sm font-semibold text-red-400 hover:text-red-300 bg-red-900/20 hover:bg-red-900/30 rounded-lg transition-all"
+              className="mt-2.5 px-3 py-1.5 text-sm font-medium text-red-700 hover:text-red-800 bg-red-100 hover:bg-red-200 rounded-md transition-all"
             >
               Try again →
             </button>
@@ -60,13 +60,13 @@ export const WelcomeMessage: React.FC<WelcomeProps> = ({ onSelectCategory, userM
   const ModePill: React.FC<{ mode: 'patient' | 'doctor' | 'researcher'; label: string; emoji: string }> = ({ mode, label, emoji }) => (
     <button
       onClick={() => onModeChange && onModeChange(mode)}
-      className={`px-6 py-3 rounded-full font-semibold text-sm transition-all duration-300 flex items-center gap-2 ${
+      className={`px-5 py-2.5 rounded-lg font-medium text-sm transition-all flex items-center gap-2 ${
         userMode === mode
-          ? 'bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-lg shadow-emerald-500/30 scale-105'
-          : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-300 border-2 border-slate-700'
+          ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-sm'
+          : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300'
       }`}
     >
-      <span className="text-lg">{emoji}</span>
+      <span className="text-base">{emoji}</span>
       {label}
     </button>
   );
@@ -87,24 +87,23 @@ export const WelcomeMessage: React.FC<WelcomeProps> = ({ onSelectCategory, userM
 
   return (
     <div className="text-center py-16 px-6">
-      <div className="mb-6 inline-flex items-center justify-center w-24 h-24 bg-gradient-to-br from-emerald-600 to-emerald-700 rounded-3xl shadow-2xl shadow-emerald-500/20">
-        <span className="text-6xl">🧬</span>
+      <div className="mb-6 inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl shadow-md">
+        <span className="text-5xl">🧬</span>
       </div>
-      <h2 className="text-4xl font-extrabold text-slate-100 mb-3 bg-gradient-to-r from-slate-100 to-slate-300 bg-clip-text text-transparent">
+      <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 mb-3">
         Welcome to ToxicoGPT
       </h2>
       
       {/* Mode Selector Pills */}
-      <div className="flex justify-center gap-4 mb-8">
+      <div className="flex justify-center gap-3 mb-6">
         <ModePill mode="patient" label="Patient" emoji="👤" />
         <ModePill mode="doctor" label="Doctor" emoji="⚕️" />
         <ModePill mode="researcher" label="Researcher" emoji="🔬" />
       </div>
       
-      <p className="text-lg text-slate-400 max-w-2xl mx-auto leading-relaxed">
+      <p className="text-base text-gray-600 max-w-2xl mx-auto leading-relaxed">
         {getModeDescription()}
       </p>
     </div>
   );
 };
-;

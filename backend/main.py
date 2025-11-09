@@ -14,8 +14,14 @@ except:
 
 # Import database components with error handling
 try:
-    from .db.database import engine, get_db, DATABASE_URL as DB_URL
-    from .db.models import Base
+    # Try relative imports first (for Vercel)
+    try:
+        from .db.database import engine, get_db, DATABASE_URL as DB_URL
+        from .db.models import Base
+    except ImportError:
+        # Fall back to backend.* imports (for local: python -m backend.main from project root)
+        from backend.db.database import engine, get_db, DATABASE_URL as DB_URL
+        from backend.db.models import Base
     from sqlalchemy.orm import Session
     
     # Create database tables (skip detailed logging in serverless)
@@ -37,10 +43,18 @@ except Exception as e:
         yield None
 
 # Import routers and services
-from .routers import chat, admin
-from .schemas import HealthResponse
-from .services.model_router import model_service
-from .services.interaction_service import seed_default_interactions
+try:
+    # Try relative imports first (for Vercel/when module is backend.main)
+    from .routers import chat, admin
+    from .schemas import HealthResponse
+    from .services.model_router import model_service
+    from .services.interaction_service import seed_default_interactions
+except ImportError:
+    # Fall back to backend.* imports (for local: python -m backend.main from project root)
+    from backend.routers import chat, admin
+    from backend.schemas import HealthResponse
+    from backend.services.model_router import model_service
+    from backend.services.interaction_service import seed_default_interactions
 
 app = FastAPI(
     title="ToxicoGPT API",
