@@ -147,7 +147,14 @@
 
     // Open in new window
     chatOpenNew.addEventListener('click', function() {
-      window.open('https://chatbot-y1ar.vercel.app/', '_blank');
+      try {
+        // Try to get the iframe's current URL (includes session if user chatted)
+        var iframeUrl = chatIframe.contentWindow.location.href;
+        window.open(iframeUrl, '_blank');
+      } catch (e) {
+        // If blocked by CORS, just open base URL
+        window.open('https://chatbot-y1ar.vercel.app/', '_blank');
+      }
       chatModal.classList.remove('active');
     });
 
