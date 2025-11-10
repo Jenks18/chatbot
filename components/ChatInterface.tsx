@@ -168,25 +168,55 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
                     <span>📚</span>
                     <span>References</span>
                   </h3>
-                  <div className="space-y-3">
-                    {allReferences.map((ref, idx) => (
-                      <div key={idx} id={`ref-${ref.number}`} className="reference-item">
-                        <div className="flex items-start gap-3">
-                          <span className="reference-number">{ref.number}</span>
-                          <div className="flex-1">
-                            <div>
-                              {ref.url !== '#' ? (
-                                <a href={ref.url} target="_blank" rel="noopener noreferrer" className="reference-title">{ref.title}</a>
-                              ) : (
-                                <span className="text-slate-200 font-semibold">{ref.title}</span>
+                  <div className="space-y-4">
+                    {allReferences.map((ref, idx) => {
+                      // Parse citation to extract title, journal, year, etc.
+                      const citation = ref.title || '';
+                      
+                      // Try to extract structured parts from citation
+                      // Format examples:
+                      // "Smith et al. Journal Name. 2023;10(2):123-456. PMID: 12345"
+                      // "FDA Drug Label - Acetaminophen, Food and Drug Administration, 2024"
+                      const parts = citation.split(/[.,;]/);
+                      const mainTitle = parts[0]?.trim() || citation;
+                      const restOfCitation = parts.slice(1).join(', ').trim();
+                      
+                      return (
+                        <div key={idx} id={`ref-${ref.number}`} className="reference-item">
+                          <div className="flex items-start gap-3">
+                            <span className="reference-number">{ref.number}</span>
+                            <div className="flex-1">
+                              <div>
+                                {ref.url !== '#' ? (
+                                  <a href={ref.url} target="_blank" rel="noopener noreferrer" className="reference-title hover:text-blue-300 transition-colors">
+                                    {mainTitle}
+                                  </a>
+                                ) : (
+                                  <div className="text-slate-200 font-semibold text-sm leading-relaxed">
+                                    {mainTitle}
+                                  </div>
+                                )}
+                              </div>
+                              {restOfCitation && (
+                                <p className="text-sm text-slate-400 mt-2 leading-relaxed">
+                                  {restOfCitation}
+                                </p>
+                              )}
+                              {ref.excerpt && (
+                                <p className="text-sm text-slate-400 mt-2 leading-relaxed italic">
+                                  {ref.excerpt}
+                                </p>
+                              )}
+                              {ref.url !== '#' && (
+                                <div className="text-xs text-slate-500 mt-2 break-all font-mono">
+                                  {ref.url}
+                                </div>
                               )}
                             </div>
-                            {ref.excerpt && (<p className="text-sm text-slate-400 mt-2 leading-relaxed">{ref.excerpt}</p>)}
-                            {ref.url !== '#' && (<div className="text-xs text-slate-500 mt-2 break-all">{ref.url}</div>)}
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
