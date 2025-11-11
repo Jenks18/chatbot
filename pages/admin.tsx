@@ -139,7 +139,7 @@ export default function Admin() {
   return (
     <>
       <Head>
-        <title>Admin Dashboard - DrugInteract AI</title>
+        <title>Admin Dashboard - Kandih ToxWiki</title>
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
       </Head>
 
@@ -149,7 +149,7 @@ export default function Admin() {
             <div className="flex items-center gap-3">
               <span className="text-3xl">🧬</span>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">ToxicoGPT — Admin</h1>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Kandih ToxWiki — Admin</h1>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Manage conversations, interactions, and reference data</p>
               </div>
             </div>

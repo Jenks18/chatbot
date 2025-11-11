@@ -1,4 +1,4 @@
-# ToxicoGPT - Drug-Drug Interaction Analysis System
+# Kandih ToxWiki - Drug-Drug Interaction Analysis System
 
 A self-hosted AI-powered chatbot for analyzing drug-drug interactions (DDI) with structured data output and geolocation tracking.
 

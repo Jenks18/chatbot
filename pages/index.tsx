@@ -33,11 +33,11 @@ export default function Home() {
     if (urlSessionId) {
       // Existing session from URL - load it
       setSessionId(urlSessionId);
-      localStorage.setItem('toxicogpt_session', urlSessionId);
+      localStorage.setItem('kandih_toxwiki_session', urlSessionId);
       loadChatHistory(urlSessionId);
     } else {
       // Check if there's a session in localStorage with existing chat
-      const storedSessionId = localStorage.getItem('toxicogpt_session');
+      const storedSessionId = localStorage.getItem('kandih_toxwiki_session');
       if (storedSessionId) {
         // Check if this session has messages in database
         loadChatHistory(storedSessionId).then((hasMessages) => {
@@ -48,7 +48,7 @@ export default function Home() {
             window.history.replaceState({}, '', newUrl);
           } else {
             // Empty session, clear it - user will get new session on first message
-            localStorage.removeItem('toxicogpt_session');
+            localStorage.removeItem('kandih_toxwiki_session');
             setSessionId('');
           }
         });
@@ -201,7 +201,7 @@ export default function Home() {
     if (!currentSessionId) {
       currentSessionId = uuidv4();
       setSessionId(currentSessionId);
-      localStorage.setItem('toxicogpt_session', currentSessionId);
+      localStorage.setItem('kandih_toxwiki_session', currentSessionId);
       // Update URL with new session ID
       const newUrl = `${window.location.pathname}?session=${currentSessionId}`;
       window.history.replaceState({}, '', newUrl);
@@ -252,7 +252,7 @@ export default function Home() {
     if (confirm('Are you sure you want to start a new chat?')) {
       setMessages([]);
       setSessionId('');
-      localStorage.removeItem('toxicogpt_session');
+      localStorage.removeItem('kandih_toxwiki_session');
       // Clear URL parameter
       window.history.pushState({}, '', '/');
     }
@@ -261,8 +261,8 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>DrugInteract AI - Drug Interaction Analysis</title>
-        <meta name="description" content="AI-powered drug-drug interaction analysis and polypharmacy risk assessment" />
+        <title>Kandih ToxWiki - Drug Interaction Analysis</title>
+        <meta name="description" content="AI-powered drug-drug interaction analysis and toxicology information" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
       </Head>
@@ -276,7 +276,7 @@ export default function Home() {
                 <span className="text-3xl">🧬</span>
               </div>
               <div>
-                <h1 className="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-500">ToxicoGPT</h1>
+                <h1 className="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-500">Kandih ToxWiki</h1>
                 <p className="text-sm text-slate-400 font-medium">Evidence-Based Toxicology AI</p>
               </div>
             </div>

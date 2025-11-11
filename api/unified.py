@@ -29,7 +29,7 @@ import json
 # Initialize database tables
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="ToxicoGPT API", version="2.0")
+app = FastAPI(title="Kandih ToxWiki API", version="2.0")
 
 # CORS configuration
 app.add_middleware(

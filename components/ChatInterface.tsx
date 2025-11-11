@@ -121,7 +121,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
               <span className="text-lg">{isUser ? '👤' : '🧬'}</span>
             </div>
             <div>
-              <span className="text-sm font-semibold text-slate-200">{isUser ? 'You' : 'ToxicoGPT'}</span>
+              <span className="text-sm font-semibold text-slate-200">{isUser ? 'You' : 'Kandih ToxWiki'}</span>
               <span className="text-xs text-slate-400 ml-2">{new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
             </div>
           </div>
