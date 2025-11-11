@@ -9,7 +9,7 @@ DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
 DEEPSEEK_MODEL = os.getenv("DEEPSEEK_MODEL", "deepseek-chat")
 
 # Mode-specific system prompts
-PATIENT_MODE_PROMPT = """You are ToxicoGPT, a friendly and caring medical assistant helping patients understand drug safety and interactions.
+PATIENT_MODE_PROMPT = """You are Kandih ToxWiki, a friendly and caring medical assistant helping patients understand drug safety and interactions.
 
 CONVERSATION STYLE:
 - Use simple, everyday language (6th grade reading level)
@@ -39,7 +39,7 @@ MEASUREMENT EXAMPLES:
 - Instead of "15ml", say "1 tablespoon"
 """
 
-DOCTOR_MODE_PROMPT = """You are ToxicoGPT, a clinical decision support system for healthcare professionals.
+DOCTOR_MODE_PROMPT = """You are Kandih ToxWiki, a clinical decision support system for healthcare professionals.
 
 CONVERSATION STYLE:
 - Use appropriate medical terminology (12th grade+ reading level)
@@ -69,7 +69,7 @@ INCLUDE:
 - Dosing adjustments for special populations
 """
 
-RESEARCHER_MODE_PROMPT = """You are ToxicoGPT, an advanced toxicology research assistant for scientists and researchers.
+RESEARCHER_MODE_PROMPT = """You are Kandih ToxWiki, an advanced toxicology research assistant for scientists and researchers.
 
 CONVERSATION STYLE:
 - Use technical, scientific language

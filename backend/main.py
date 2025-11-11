@@ -43,7 +43,7 @@ from .services.model_router import model_service
 from .services.interaction_service import seed_default_interactions
 
 app = FastAPI(
-    title="ToxicoGPT API",
+    title="Kandih ToxWiki API",
     description="Self-hosted toxicology chatbot API with conversation logging",
     version="1.0.0"
 )
@@ -67,7 +67,7 @@ app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
 @app.get("/")
 async def root():
     return {
-        "message": "ToxicoGPT API",
+        "message": "Kandih ToxWiki API",
         "version": "1.0.0",
         "docs": "/docs",
         "health": "/health"

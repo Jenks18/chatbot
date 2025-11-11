@@ -10,7 +10,7 @@ export const LoadingSpinner: React.FC = () => {
             <div className="w-2.5 h-2.5 bg-blue-500 rounded-full animate-bounce shadow-lg shadow-blue-500/50" style={{ animationDelay: '150ms' }}></div>
             <div className="w-2.5 h-2.5 bg-blue-500 rounded-full animate-bounce shadow-lg shadow-blue-500/50" style={{ animationDelay: '300ms' }}></div>
           </div>
-          <span className="text-sm text-slate-300 font-medium">ToxicoGPT is analyzing...</span>
+          <span className="text-sm text-slate-300 font-medium">Kandih ToxWiki is analyzing...</span>
         </div>
       </div>
     </div>
@@ -91,7 +91,7 @@ export const WelcomeMessage: React.FC<WelcomeProps> = ({ onSelectCategory, userM
         <span className="text-6xl">🧬</span>
       </div>
       <h2 className="text-4xl font-extrabold text-slate-100 mb-3 bg-gradient-to-r from-slate-100 to-slate-300 bg-clip-text text-transparent">
-        Welcome to ToxicoGPT
+        Welcome to Kandih ToxWiki
       </h2>
       
       {/* Mode Selector Pills */}
