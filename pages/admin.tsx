@@ -11,6 +11,7 @@ interface SessionInfo {
   user_agent: string;
   country?: string;
   city?: string;
+  region?: string;
   first_message_preview?: string;
 }
 
@@ -251,8 +252,8 @@ export default function Admin() {
                             <div className="flex flex-wrap gap-4 text-xs text-gray-500 dark:text-gray-400">
                               <span>🕒 {formatDate(session.started_at)}</span>
                               <span>⏱️ Duration: {formatDuration(session.started_at, session.last_active)}</span>
-                              {session.city && session.country && (
-                                <span>📍 {session.city}, {session.country}</span>
+                              {session.city && (
+                                <span>📍 {session.city}{session.region && `, ${session.region}`}{session.country && `, ${session.country}`}</span>
                               )}
                             </div>
                           </div>
@@ -382,7 +383,7 @@ export default function Admin() {
                   <div>
                     <span className="text-gray-500 dark:text-gray-400">Location</span>
                     <p className="font-medium text-gray-900 dark:text-white">
-                      {selectedSession.city}, {selectedSession.country}
+                      {selectedSession.city}{selectedSession.region && `, ${selectedSession.region}`}{selectedSession.country && `, ${selectedSession.country}`}
                     </p>
                   </div>
                 )}

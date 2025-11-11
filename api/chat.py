@@ -101,6 +101,7 @@ class handler(BaseHTTPRequestHandler):
             try:
                 from backend.db.database import SessionLocal
                 from backend.db.models import ChatLog, Session as SessionModel
+                from backend.services.geo_service import geo_service
                 
                 db = SessionLocal()
                 
@@ -111,7 +112,14 @@ class handler(BaseHTTPRequestHandler):
                 
                 user_agent = self.headers.get('User-Agent', 'unknown')
                 
-                # Create or update session
+                # Get geolocation data from IP (city, region, country)
+                geo_data = None
+                try:
+                    geo_data = loop.run_until_complete(geo_service.get_location_data(client_ip))
+                except Exception as geo_error:
+                    print(f"Geolocation lookup failed: {geo_error}")
+                
+                # Create or update session with location data
                 existing_session = db.query(SessionModel).filter(
                     SessionModel.session_id == session_id
                 ).first()
@@ -120,13 +128,24 @@ class handler(BaseHTTPRequestHandler):
                     new_session = SessionModel(
                         session_id=session_id,
                         user_agent=user_agent,
-                        ip_address=client_ip
+                        ip_address=client_ip,
+                        city=geo_data.get("city") if geo_data else None,
+                        region=geo_data.get("region") if geo_data else None,
+                        country=geo_data.get("country") if geo_data else None,
+                        latitude=geo_data.get("lat") if geo_data else None,
+                        longitude=geo_data.get("lon") if geo_data else None
                     )
                     db.add(new_session)
                 else:
-                    # Update last_active
+                    # Update last_active and location data if not already set
                     from sqlalchemy import func
                     existing_session.last_active = func.now()
+                    if geo_data and not existing_session.city:
+                        existing_session.city = geo_data.get("city")
+                        existing_session.region = geo_data.get("region")
+                        existing_session.country = geo_data.get("country")
+                        existing_session.latitude = geo_data.get("lat")
+                        existing_session.longitude = geo_data.get("lon")
                 
                 # Save chat log
                 # Extract references from response
@@ -154,7 +173,14 @@ class handler(BaseHTTPRequestHandler):
                     extra_metadata={
                         "consumer_summary": consumer_summary,
                         "user_mode": user_mode,
-                        "references": references
+                        "references": references,
+                        "geolocation": {
+                            "city": geo_data.get("city") if geo_data else None,
+                            "region": geo_data.get("region") if geo_data else None,
+                            "country": geo_data.get("country") if geo_data else None,
+                            "timezone": geo_data.get("timezone") if geo_data else None,
+                            "isp": geo_data.get("isp") if geo_data else None
+                        } if geo_data else None
                     }
                 )
                 db.add(chat_log)
