@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { apiService, StatsOverview } from '../services/api';
+import { UserButton, useUser } from '@clerk/nextjs';
 
 interface SessionInfo {
   session_id: string;
@@ -41,6 +42,7 @@ interface SessionHistory {
 }
 
 export default function Admin() {
+  const { user, isLoaded } = useUser();
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
   const [stats, setStats] = useState<StatsOverview | null>(null);
   const [loading, setLoading] = useState(true);
@@ -151,10 +153,12 @@ export default function Admin() {
               <span className="text-3xl">🧬</span>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Kandih ToxWiki — Admin</h1>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Manage conversations, interactions, and reference data</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  {isLoaded && user ? `Welcome, ${user.firstName || user.emailAddresses[0]?.emailAddress}` : 'Manage conversations, interactions, and reference data'}
+                </p>
               </div>
             </div>
-            <div className="flex gap-3">
+            <div className="flex items-center gap-3">
               <button
                 onClick={loadData}
                 className="px-4 py-2 bg-toxgreen-600 text-white rounded-lg hover:bg-toxgreen-700 text-sm font-medium flex items-center gap-2"
@@ -179,6 +183,14 @@ export default function Admin() {
               >
                 ← Back to Chat
               </Link>
+              <UserButton 
+                afterSignOutUrl="/"
+                appearance={{
+                  elements: {
+                    avatarBox: "w-9 h-9"
+                  }
+                }}
+              />
             </div>
           </div>
         </header>
