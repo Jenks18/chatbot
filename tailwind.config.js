@@ -7,6 +7,9 @@ module.exports = {
   ],
   theme: {
     extend: {
+      screens: {
+        'xs': '475px',  // Extra small devices (large phones)
+      },
       colors: {
         primary: {
           50: '#f0f9ff',

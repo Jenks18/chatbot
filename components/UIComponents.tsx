@@ -60,15 +60,14 @@ export const WelcomeMessage: React.FC<WelcomeProps> = ({ onSelectCategory, userM
   const ModePill: React.FC<{ mode: 'patient' | 'doctor' | 'researcher'; label: string; emoji: string }> = ({ mode, label, emoji }) => (
     <button
       onClick={() => onModeChange && onModeChange(mode)}
-      className={`px-4 sm:px-6 py-2 sm:py-3 rounded-full font-semibold text-xs sm:text-sm transition-all duration-300 flex items-center gap-1.5 sm:gap-2 ${
+      className={`px-2 xs:px-3 sm:px-4 md:px-6 py-1.5 xs:py-2 sm:py-2.5 md:py-3 rounded-full font-semibold text-[10px] xs:text-xs sm:text-sm transition-all duration-300 flex items-center gap-1 xs:gap-1.5 sm:gap-2 ${
         userMode === mode
           ? 'bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-lg shadow-blue-500/30 scale-105'
-          : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-300 border-2 border-slate-700'
+          : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-300 border border-slate-700'
       }`}
     >
-      <span className="text-base sm:text-lg">{emoji}</span>
-      <span className="hidden sm:inline">{label}</span>
-      <span className="sm:hidden">{label.slice(0, 3)}</span>
+      <span className="text-sm xs:text-base sm:text-lg">{emoji}</span>
+      <span className="hidden xs:inline">{label}</span>
     </button>
   );
 
@@ -87,22 +86,22 @@ export const WelcomeMessage: React.FC<WelcomeProps> = ({ onSelectCategory, userM
   };
 
   return (
-    <div className="text-center py-8 sm:py-16 px-4 sm:px-6">
-      <div className="mb-4 sm:mb-6 inline-flex items-center justify-center w-16 h-16 sm:w-24 sm:h-24 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl sm:rounded-3xl shadow-2xl shadow-blue-500/30">
-        <span className="text-4xl sm:text-6xl">🧬</span>
+    <div className="text-center py-4 xs:py-6 sm:py-12 md:py-16 px-2 xs:px-3 sm:px-4 md:px-6">
+      <div className="mb-3 xs:mb-4 sm:mb-6 inline-flex items-center justify-center w-12 h-12 xs:w-16 xs:h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl xs:rounded-2xl sm:rounded-3xl shadow-2xl shadow-blue-500/20">
+        <span className="text-3xl xs:text-4xl sm:text-5xl md:text-6xl">🧬</span>
       </div>
-      <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-100 mb-2 sm:mb-3 bg-gradient-to-r from-slate-100 to-slate-300 bg-clip-text text-transparent px-4">
+      <h2 className="text-lg xs:text-xl sm:text-3xl md:text-4xl font-extrabold text-slate-100 mb-1.5 xs:mb-2 sm:mb-3 bg-gradient-to-r from-slate-100 to-slate-300 bg-clip-text text-transparent px-2 xs:px-4">
         Welcome to Kandih ToxWiki
       </h2>
       
-      {/* Mode Selector Pills */}
-      <div className="flex justify-center gap-2 sm:gap-4 mb-6 sm:mb-8 flex-wrap px-2">
+      {/* Mode Selector Pills - Responsive */}
+      <div className="flex justify-center gap-1.5 xs:gap-2 sm:gap-3 md:gap-4 mb-4 xs:mb-5 sm:mb-6 md:mb-8 flex-wrap px-2">
         <ModePill mode="patient" label="Patient" emoji="👤" />
         <ModePill mode="doctor" label="Doctor" emoji="⚕️" />
         <ModePill mode="researcher" label="Researcher" emoji="🔬" />
       </div>
       
-      <p className="text-sm sm:text-lg text-slate-400 max-w-2xl mx-auto leading-relaxed px-4">
+      <p className="text-xs xs:text-sm sm:text-base md:text-lg text-slate-400 max-w-2xl mx-auto leading-relaxed px-2 xs:px-3 sm:px-4">
         {getModeDescription()}
       </p>
     </div>
