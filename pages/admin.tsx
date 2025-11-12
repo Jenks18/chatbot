@@ -147,21 +147,21 @@ export default function Admin() {
       </Head>
 
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
-          <div className="max-w-7xl mx-auto flex justify-between items-center">
-            <div className="flex items-center gap-3">
-              <span className="text-3xl">🧬</span>
+        <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-3 sm:px-6 py-3 sm:py-4">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <span className="text-2xl sm:text-3xl">🧬</span>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Kandih ToxWiki — Admin</h1>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
+                <h1 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white">Kandih ToxWiki — Admin</h1>
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 line-clamp-1">
                   {isLoaded && user ? `Welcome, ${user.firstName || user.emailAddresses[0]?.emailAddress}` : 'Manage conversations, interactions, and reference data'}
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto flex-wrap">
               <button
                 onClick={loadData}
-                className="px-4 py-2 bg-toxgreen-600 text-white rounded-lg hover:bg-toxgreen-700 text-sm font-medium flex items-center gap-2"
+                className="px-3 sm:px-4 py-1.5 sm:py-2 bg-toxgreen-600 text-white rounded-lg hover:bg-toxgreen-700 text-xs sm:text-sm font-medium flex items-center gap-1 sm:gap-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />

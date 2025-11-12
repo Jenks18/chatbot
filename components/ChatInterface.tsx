@@ -113,26 +113,26 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
   const paragraphs = formatContent(contentWithoutRefs);
 
   return (
-    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-8`}>
-      <div className={`max-w-4xl w-full ${isUser ? 'bg-gradient-to-br from-slate-700 to-slate-800 text-white rounded-2xl px-6 py-5 shadow-lg border border-slate-600' : 'bg-transparent'}`}>
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className={`flex items-center justify-center w-8 h-8 rounded-full ${isUser ? 'bg-slate-600' : 'bg-blue-600 shadow-lg shadow-blue-500/30'}`}>
-              <span className="text-lg">{isUser ? '👤' : '🧬'}</span>
+    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-6 sm:mb-8`}>
+      <div className={`max-w-4xl w-full ${isUser ? 'bg-gradient-to-br from-slate-700 to-slate-800 text-white rounded-2xl px-4 sm:px-6 py-4 sm:py-5 shadow-lg border border-slate-600' : 'bg-transparent'}`}>
+        <div className="flex items-start sm:items-center justify-between mb-3 sm:mb-4 flex-col sm:flex-row gap-2 sm:gap-0">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className={`flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full flex-shrink-0 ${isUser ? 'bg-slate-600' : 'bg-blue-600 shadow-lg shadow-blue-500/30'}`}>
+              <span className="text-base sm:text-lg">{isUser ? '👤' : '🧬'}</span>
             </div>
             <div>
-              <span className="text-sm font-semibold text-slate-200">{isUser ? 'You' : 'Kandih ToxWiki'}</span>
-              <span className="text-xs text-slate-400 ml-2">{new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+              <span className="text-xs sm:text-sm font-semibold text-slate-200">{isUser ? 'You' : 'Kandih ToxWiki'}</span>
+              <span className="text-[10px] sm:text-xs text-slate-400 ml-2">{new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
             </div>
           </div>
           {!isUser && (message.consumerSummary || message.content) && (
-            <div className="flex items-center gap-2 bg-slate-800 rounded-lg p-1">
-              <button type="button" onClick={() => setViewMode('simple')} className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${viewMode === 'simple' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md' : 'bg-transparent text-slate-400 hover:text-slate-200'}`} aria-pressed={viewMode === 'simple'}>Simple</button>
-              <button type="button" onClick={() => setViewMode('technical')} className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${viewMode === 'technical' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md' : 'bg-transparent text-slate-400 hover:text-slate-200'}`} aria-pressed={viewMode === 'technical'}>Technical</button>
+            <div className="flex items-center gap-1 sm:gap-2 bg-slate-800 rounded-lg p-1">
+              <button type="button" onClick={() => setViewMode('simple')} className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-md text-[10px] sm:text-xs font-semibold transition-all ${viewMode === 'simple' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md' : 'bg-transparent text-slate-400 hover:text-slate-200'}`} aria-pressed={viewMode === 'simple'}>Simple</button>
+              <button type="button" onClick={() => setViewMode('technical')} className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-md text-[10px] sm:text-xs font-semibold transition-all ${viewMode === 'technical' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md' : 'bg-transparent text-slate-400 hover:text-slate-200'}`} aria-pressed={viewMode === 'technical'}>Technical</button>
             </div>
           )}
         </div>
-        <div className={`${isUser ? 'text-slate-100' : 'reader-content'}`}>
+        <div className={`${isUser ? 'text-slate-100 text-sm sm:text-base' : 'reader-content'}`}>
           {!isUser ? (
             <div>
               {paragraphs.length > 0 ? (
@@ -245,11 +245,11 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, disabled }) => {
     }
   };
   return (
-    <form onSubmit={handleSubmit} className="p-4">
-      <div className="flex gap-3">
-        <input type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Ask about drug interactions, toxicity, or chemical safety..." disabled={disabled} className="flex-1 px-5 py-4 border border-slate-600 bg-slate-700 text-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 placeholder-slate-400 transition-all" />
-        <button type="submit" disabled={disabled || !input.trim()} className="px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-xl hover:from-blue-700 hover:to-indigo-800 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition-all shadow-lg hover:shadow-xl disabled:hover:shadow-lg transform hover:scale-105 disabled:hover:scale-100">
-          <span className="text-xl">→</span>
+    <form onSubmit={handleSubmit} className="p-3 sm:p-4">
+      <div className="flex gap-2 sm:gap-3">
+        <input type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Ask about drug interactions..." disabled={disabled} className="flex-1 px-3 sm:px-5 py-3 sm:py-4 text-sm sm:text-base border border-slate-600 bg-slate-700 text-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 placeholder-slate-400 transition-all" />
+        <button type="submit" disabled={disabled || !input.trim()} className="px-4 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-xl hover:from-blue-700 hover:to-indigo-800 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition-all shadow-lg hover:shadow-xl disabled:hover:shadow-lg transform hover:scale-105 disabled:hover:scale-100">
+          <span className="text-lg sm:text-xl">→</span>
         </button>
       </div>
     </form>
