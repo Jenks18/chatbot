@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { apiService, StatsOverview } from '../services/api';
@@ -85,7 +85,7 @@ export default function Admin() {
     );
   }
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!isSignedIn || !user) return;
     
     setLoading(true);
@@ -114,14 +114,13 @@ export default function Admin() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [isSignedIn, user, isSuperAdmin]);
 
   useEffect(() => {
     if (isSignedIn && user) {
       loadData();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSignedIn, user?.id]);
+  }, [isSignedIn, user?.id, loadData]);
 
   const loadInteractions = async () => {
     try {
