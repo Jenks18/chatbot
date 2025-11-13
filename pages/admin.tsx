@@ -94,8 +94,9 @@ export default function Admin() {
       const loadData = async () => {
         setLoading(true);
         try {
-          // If super admin, load all sessions; otherwise load only user's sessions
-          const userId = isSuperAdmin ? undefined : user?.id;
+          // Check super admin status inside useEffect to avoid dependency issues
+          const isSuper = user?.publicMetadata?.role === 'admin';
+          const userId = isSuper ? undefined : user?.id;
           
           const [sessionsData, statsData] = await Promise.all([
             apiService.getAllSessions(100, userId),
@@ -127,8 +128,9 @@ export default function Admin() {
   const refreshData = async () => {
     setLoading(true);
     try {
-      // If super admin, load all sessions; otherwise load only user's sessions
-      const userId = isSuperAdmin ? undefined : user?.id;
+      // Check super admin status to avoid dependency on isSuperAdmin
+      const isSuper = user?.publicMetadata?.role === 'admin';
+      const userId = isSuper ? undefined : user?.id;
       
       const [sessionsData, statsData] = await Promise.all([
         apiService.getAllSessions(100, userId),
