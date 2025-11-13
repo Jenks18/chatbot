@@ -11,8 +11,6 @@ interface Message {
   content: string;
   timestamp: Date;
   evidence?: Array<any>;
-  consumerSummary?: string;
-  provenance?: { source: string; evidence_ids?: number[] };
 }
 
 export default function Home() {
@@ -179,8 +177,6 @@ export default function Home() {
             content: log.answer,
             timestamp: new Date(log.created_at),
             evidence: log.extra_metadata?.evidence || undefined,
-            consumerSummary: log.extra_metadata?.consumer_summary || undefined,
-            provenance: log.extra_metadata?.consumer_summary_provenance || undefined,
           });
         }
         setMessages(loadedMessages);
@@ -221,12 +217,10 @@ export default function Home() {
       try {
       const response = await apiService.sendMessage(message, currentSessionId, userMode);
 
-      // Add assistant response (include consumer summary when returned by backend)
+      // Add assistant response with evidence
       const assistantMessage: Message = {
         role: 'assistant',
         content: response.answer,
-        consumerSummary: (response as any).consumer_summary || (response as any).consumerSummary || undefined,
-        provenance: (response as any).provenance || undefined,
         timestamp: new Date(),
         evidence: response.evidence,
       };

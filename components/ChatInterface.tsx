@@ -4,7 +4,6 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   timestamp: string | Date;
-  consumerSummary?: string;
   evidence?: Array<{
     id: number;
     drug_name: string;
@@ -13,7 +12,6 @@ interface Message {
     evidence_quality?: string;
     references?: Array<{ id: number; title: string; url: string; excerpt?: string; unverified?: boolean }>;
   }>;
-  provenance?: { source: string; evidence_ids?: number[] };
 }
 
 interface ChatMessageProps {
