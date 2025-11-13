@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { apiService, StatsOverview } from '../services/api';
@@ -43,6 +43,7 @@ interface SessionHistory {
 
 export default function Admin() {
   const { user, isLoaded, isSignedIn } = useUser();
+  const hasLoadedRef = useRef(false);
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
   const [stats, setStats] = useState<StatsOverview | null>(null);
   const [loading, setLoading] = useState(true);
@@ -85,9 +86,45 @@ export default function Admin() {
     );
   }
 
-  const loadData = useCallback(async () => {
-    if (!isSignedIn || !user) return;
-    
+  useEffect(() => {
+    // Only run once when component mounts and user is signed in
+    if (isSignedIn && user && !hasLoadedRef.current) {
+      hasLoadedRef.current = true;
+      
+      const loadData = async () => {
+        setLoading(true);
+        try {
+          // If super admin, load all sessions; otherwise load only user's sessions
+          const userId = isSuperAdmin ? undefined : user?.id;
+          
+          const [sessionsData, statsData] = await Promise.all([
+            apiService.getAllSessions(100, userId),
+            apiService.getStatsOverview(),
+            // note: interactions fetched separately to keep initial load fast
+          ]);
+          
+          // Ensure sessionsData is an array and filter out invalid entries
+          const validSessions = Array.isArray(sessionsData) 
+            ? sessionsData.filter(s => s && s.session_id) 
+            : [];
+          
+          setSessions(validSessions);
+          setStats(statsData || null);
+          loadInteractions();
+        } catch (error) {
+          console.error('Failed to load admin data:', error);
+          setSessions([]);
+          setStats(null);
+        } finally {
+          setLoading(false);
+        }
+      };
+      
+      loadData();
+    }
+  }, [isSignedIn, user]);
+
+  const refreshData = async () => {
     setLoading(true);
     try {
       // If super admin, load all sessions; otherwise load only user's sessions
@@ -96,7 +133,6 @@ export default function Admin() {
       const [sessionsData, statsData] = await Promise.all([
         apiService.getAllSessions(100, userId),
         apiService.getStatsOverview(),
-        // note: interactions fetched separately to keep initial load fast
       ]);
       
       // Ensure sessionsData is an array and filter out invalid entries
@@ -114,13 +150,7 @@ export default function Admin() {
     } finally {
       setLoading(false);
     }
-  }, [isSignedIn, user, isSuperAdmin]);
-
-  useEffect(() => {
-    if (isSignedIn && user) {
-      loadData();
-    }
-  }, [isSignedIn, user?.id, loadData]);
+  };
 
   const loadInteractions = async () => {
     try {
@@ -209,7 +239,7 @@ export default function Admin() {
             </div>
             <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto flex-wrap">
               <button
-                onClick={loadData}
+                onClick={refreshData}
                 className="px-3 sm:px-4 py-1.5 sm:py-2 bg-toxgreen-600 text-white rounded-lg hover:bg-toxgreen-700 text-xs sm:text-sm font-medium flex items-center gap-1 sm:gap-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
