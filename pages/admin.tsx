@@ -85,13 +85,9 @@ export default function Admin() {
     );
   }
 
-  useEffect(() => {
-    if (isSignedIn) {
-      loadData();
-    }
-  }, [user, isSignedIn]);
-
   const loadData = async () => {
+    if (!isSignedIn || !user) return;
+    
     setLoading(true);
     try {
       // If super admin, load all sessions; otherwise load only user's sessions
@@ -119,6 +115,13 @@ export default function Admin() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (isSignedIn && user) {
+      loadData();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSignedIn, user?.id]);
 
   const loadInteractions = async () => {
     try {
