@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { apiService, StatsOverview } from '../services/api';
-import { UserButton, useUser } from '@clerk/nextjs';
+import { UserButton, useUser, SignIn } from '@clerk/nextjs';
 
 interface SessionInfo {
   session_id: string;
@@ -42,7 +42,7 @@ interface SessionHistory {
 }
 
 export default function Admin() {
-  const { user, isLoaded } = useUser();
+  const { user, isLoaded, isSignedIn } = useUser();
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
   const [stats, setStats] = useState<StatsOverview | null>(null);
   const [loading, setLoading] = useState(true);
@@ -54,9 +54,42 @@ export default function Admin() {
   // Check if user is super admin (configure in Clerk dashboard: publicMetadata.role = "admin")
   const isSuperAdmin = user?.publicMetadata?.role === 'admin';
 
+  // If not loaded yet, show loading
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-2xl">🧬</div>
+          <p className="text-gray-600 dark:text-gray-400 mt-4">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If not signed in, show sign in
+  if (!isSignedIn) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="max-w-md w-full">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+              🧬 Admin Access Required
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400">
+              Please sign in to access the admin dashboard
+            </p>
+          </div>
+          <SignIn routing="hash" />
+        </div>
+      </div>
+    );
+  }
+
   useEffect(() => {
-    loadData();
-  }, [user]);
+    if (isSignedIn) {
+      loadData();
+    }
+  }, [user, isSignedIn]);
 
   const loadData = async () => {
     setLoading(true);
