@@ -75,35 +75,63 @@ export const WelcomeMessage: React.FC<WelcomeProps> = ({ onSelectCategory, userM
   const getModeDescription = () => {
     switch(userMode) {
       case 'patient':
-        return 'I\'ll explain everything in simple, easy-to-understand language and ask questions to better understand your needs.';
+        return {
+          title: 'Patient-Empowered Medication Safety',
+          description: 'I help you understand your medicines while keeping you safe. You\'ll get clear explanations of proven safety facts, what other patients experience, and questions to ask your doctor. I use simple language and always cite my sources.',
+          icon: '🛡️'
+        };
       case 'doctor':
-        return 'I\'ll provide clinical guidance with appropriate medical terminology and evidence-based recommendations.';
+        return {
+          title: 'Clinical Medication Safety Analysis',
+          description: 'I provide evidence-based safety information for specified medications only. I analyze drug-specific liabilities, interactions, monitoring parameters, and patient experience insights. I never recommend treatments or alternatives - only safety analysis.',
+          icon: '⚕️'
+        };
       case 'researcher':
-        return 'I\'ll deliver comprehensive technical analysis with detailed mechanisms and extensive scientific literature citations.';
+        return {
+          title: 'Hierarchical TPP Competitive Intelligence',
+          description: 'I conduct two-phase safety landscape analysis for Target Product Profile development. Phase 1: Deep dive into a specific competitor drug. Phase 2: Class-wide contextualization to identify true differentiation opportunities. Includes molecular mechanisms, PK/PD data, and competitive positioning.',
+          icon: '🔬'
+        };
       default:
-        return 'Your AI-powered toxicology assistant.';
+        return {
+          title: 'Medication Safety Assistant',
+          description: 'Select your persona above to get started.',
+          icon: '🧬'
+        };
     }
   };
+  
+  const modeInfo = getModeDescription();
 
   return (
     <div className="text-center py-4 xs:py-6 sm:py-12 md:py-16 px-2 xs:px-3 sm:px-4 md:px-6">
       <div className="mb-3 xs:mb-4 sm:mb-6 inline-flex items-center justify-center w-12 h-12 xs:w-16 xs:h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl xs:rounded-2xl sm:rounded-3xl shadow-2xl shadow-blue-500/20">
-        <span className="text-3xl xs:text-4xl sm:text-5xl md:text-6xl">🧬</span>
+        <span className="text-3xl xs:text-4xl sm:text-5xl md:text-6xl">{modeInfo.icon}</span>
       </div>
       <h2 className="text-lg xs:text-xl sm:text-3xl md:text-4xl font-extrabold text-slate-100 mb-1.5 xs:mb-2 sm:mb-3 bg-gradient-to-r from-slate-100 to-slate-300 bg-clip-text text-transparent px-2 xs:px-4">
         Welcome to Kandih ToxWiki
       </h2>
       
       {/* Mode Selector Pills - Responsive */}
-      <div className="flex justify-center gap-1.5 xs:gap-2 sm:gap-3 md:gap-4 mb-4 xs:mb-5 sm:mb-6 md:mb-8 flex-wrap px-2">
-        <ModePill mode="patient" label="Patient" emoji="👤" />
-        <ModePill mode="doctor" label="Doctor" emoji="⚕️" />
-        <ModePill mode="researcher" label="Researcher" emoji="🔬" />
+      <div className="mb-4 xs:mb-5 sm:mb-6 md:mb-8">
+        <p className="text-xs xs:text-sm sm:text-base text-slate-300 mb-3 xs:mb-4 sm:mb-5 font-semibold">
+          Select Your Persona:
+        </p>
+        <div className="flex justify-center gap-1.5 xs:gap-2 sm:gap-3 md:gap-4 flex-wrap px-2">
+          <ModePill mode="patient" label="Patient" emoji="👤" />
+          <ModePill mode="doctor" label="Physician" emoji="⚕️" />
+          <ModePill mode="researcher" label="Researcher" emoji="🔬" />
+        </div>
       </div>
       
-      <p className="text-xs xs:text-sm sm:text-base md:text-lg text-slate-400 max-w-2xl mx-auto leading-relaxed px-2 xs:px-3 sm:px-4">
-        {getModeDescription()}
-      </p>
+      <div className="max-w-3xl mx-auto px-2 xs:px-3 sm:px-4">
+        <h3 className="text-sm xs:text-base sm:text-lg md:text-xl font-bold text-blue-400 mb-2 xs:mb-3 sm:mb-4">
+          {modeInfo.title}
+        </h3>
+        <p className="text-xs xs:text-sm sm:text-base text-slate-400 leading-relaxed">
+          {modeInfo.description}
+        </p>
+      </div>
     </div>
   );
 };

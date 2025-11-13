@@ -59,7 +59,6 @@ const removeReferencesSection = (text: string): string => {
 
 export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
   const isUser = message.role === 'user';
-  const [viewMode, setViewMode] = React.useState<'simple' | 'technical'>('simple');
   const [showReferences, setShowReferences] = React.useState(true); // Changed to true by default
 
   const formatContent = (s: string) => {
@@ -95,7 +94,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
   };
 
   // Get display content and extract references from AI response
-  const displayContent = viewMode === 'simple' ? message.consumerSummary : message.content;
+  const displayContent = message.content;
   const contentWithoutRefs = removeReferencesSection(displayContent || '');
   const aiReferences = parseReferences(displayContent || '');
   
@@ -125,12 +124,6 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
               <span className="text-[9px] xs:text-[10px] sm:text-xs text-slate-400">{new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
             </div>
           </div>
-          {!isUser && (message.consumerSummary || message.content) && (
-            <div className="flex items-center gap-1 xs:gap-1.5 sm:gap-2 bg-slate-800 rounded-md sm:rounded-lg p-0.5 xs:p-1 flex-shrink-0">
-              <button type="button" onClick={() => setViewMode('simple')} className={`px-1.5 xs:px-2 sm:px-3 py-0.5 xs:py-1 sm:py-1.5 rounded text-[9px] xs:text-[10px] sm:text-xs font-semibold transition-all ${viewMode === 'simple' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md' : 'bg-transparent text-slate-400 hover:text-slate-200'}`} aria-pressed={viewMode === 'simple'}>Simple</button>
-              <button type="button" onClick={() => setViewMode('technical')} className={`px-1.5 xs:px-2 sm:px-3 py-0.5 xs:py-1 sm:py-1.5 rounded text-[9px] xs:text-[10px] sm:text-xs font-semibold transition-all ${viewMode === 'technical' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md' : 'bg-transparent text-slate-400 hover:text-slate-200'}`} aria-pressed={viewMode === 'technical'}>Technical</button>
-            </div>
-          )}
         </div>
         <div className={`${isUser ? 'text-slate-100 text-xs xs:text-sm sm:text-base' : 'reader-content'}`}>
           {!isUser ? (
@@ -152,7 +145,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
                   })}
                 </div>
               ) : (
-                <p className="text-sm text-slate-400 italic">{viewMode === 'simple' ? 'No simplified summary available. Switch to Technical view for the full response.' : 'No content available.'}</p>
+                <p className="text-sm text-slate-400 italic">No content available.</p>
               )}
               {allReferences.length > 0 && (
                 <div className="mt-6">
