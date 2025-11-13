@@ -590,10 +590,16 @@ Remember your conversational workflow. Answer their specific question and ask wh
             full_content = completion.choices[0].message.content
             
             # If query is about a drug, enrich with our FREE APIs
-            if user_query and any(keyword in user_query.lower() for keyword in 
-                ['drug', 'medication', 'medicine', 'acetaminophen', 'panadol', 
-                 'ibuprofen', 'aspirin', 'interaction', 'side effect']):
-                
+            # BUT: Skip enrichment for patient mode first queries (they only need greeting, no data yet)
+            should_enrich = (
+                user_query and 
+                any(keyword in user_query.lower() for keyword in 
+                    ['drug', 'medication', 'medicine', 'acetaminophen', 'panadol', 
+                     'ibuprofen', 'aspirin', 'interaction', 'side effect']) and
+                not (user_mode == "patient" and (not conversation_history or len(conversation_history) == 0))
+            )
+            
+            if should_enrich:
                 # Add free FDA data if available
                 try:
                     enriched_content = await self._enrich_with_free_apis(user_query, full_content)
