@@ -123,7 +123,8 @@ export default function Admin() {
       
       loadData();
     }
-  }, [isSignedIn, user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const refreshData = async () => {
     setLoading(true);
