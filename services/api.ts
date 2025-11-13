@@ -17,7 +17,6 @@ export interface ChatResponse {
   session_id: string;
   model_used: string;
   response_time_ms: number;
-  consumer_summary?: string;
   sources?: string[];
   evidence?: Array<{
     id: number;
