@@ -214,101 +214,10 @@ Recent Literature: {json.dumps(drug_data.get('literature', []), indent=2)}
                 ]
                 metadata["model_extracted_links"] = [l["url"] for l in model_links]
 
-        # Build a short consumer-friendly summary. Model-first with provenance; DB-only deterministic fallback.
-        consumer_summary = ""
-        consumer_summary_source = None
-        consumer_summary_evidence_ids = []
-
-        # Prepare an enumerated evidence block (1-based indices) for the model to reference.
-        evidence_block_lines = []
-        index_to_ev_id = {}
-        for idx, ev in enumerate(evidence_serializable[:6], start=1):
-            index_to_ev_id[idx] = ev.get('id')
-            # prefer excerpt when available
-            excerpt = ''
-            if ev.get('references') and len(ev.get('references')) > 0:
-                excerpt = ev.get('references')[0].get('excerpt') or ''
-            title = ev.get('title') or ev.get('drug_name') or ''
-            evidence_block_lines.append(f"{idx}. {title}\nExcerpt: {excerpt}")
-
-        evidence_block = "\n\n".join(evidence_block_lines)
-
-        # If the model is enabled, prefer a model-generated summary. Try several strategies in order
-        # to maximize the chance of producing a short, factual consumer summary.
-        if getattr(model_service, 'enabled', False):
-            try:
-                # 1) If we have DB evidence, ask the model for a provenance-anchored summary
-                if evidence_block:
-                    model_summary, model_indices = await model_service.generate_consumer_summary_with_provenance(evidence_block, question=message.message)
-                    valid_indices = [i for i in model_indices if i in index_to_ev_id]
-                    if model_summary and valid_indices:
-                        consumer_summary = model_summary
-                        consumer_summary_source = 'model'
-                        consumer_summary_evidence_ids = [index_to_ev_id[i] for i in valid_indices]
-
-                # 2) If still empty, ask the model to summarize the assistant's full answer
-                if not consumer_summary:
-                    model_summary = await model_service.generate_consumer_summary(answer, question=message.message)
-                    if model_summary:
-                        consumer_summary = model_summary
-                        consumer_summary_source = 'model'
-                        consumer_summary_evidence_ids = []
-
-                # 3) If still empty, ask the model to summarize the user's question (short prompt)
-                if not consumer_summary:
-                    model_summary = await model_service.generate_consumer_summary(message.message, question=message.message)
-                    if model_summary:
-                        consumer_summary = model_summary
-                        consumer_summary_source = 'model'
-                        consumer_summary_evidence_ids = []
-                            
-            except Exception:
-                # leave consumer_summary for DB-only fallback below
-                consumer_summary = ""
+        # No consumer_summary needed - using three-tier persona system
+        # The answer already contains persona-specific content based on user_mode
         
-
-        # If no valid model summary, derive a deterministic DB summary from evidence (no hybrid)
-        if not consumer_summary and evidence_serializable:
-            # Simple deterministic fallback: use top evidence item(s) to create a short summary
-            parts = []
-            ids = []
-            for ev in evidence_serializable[:2]:
-                ids.append(ev.get('id'))
-                s = (ev.get('summary') or ev.get('title') or ev.get('drug_name') or '').strip()
-                rec = ev.get('recommended_actions')
-                if rec:
-                    parts.append(f"{s.rstrip('.')} — Recommendation: {rec.rstrip('.')}.")
-                else:
-                    parts.append(s)
-            consumer_summary = " ".join([p for p in parts if p])
-            consumer_summary_source = 'db'
-            consumer_summary_evidence_ids = ids
-
-        # If still no consumer_summary at this point, attempt a final model-only summarization of the assistant answer
-        # (this is a last-resort model-only path to populate Simple view; will be marked as model source)
-        if not consumer_summary and getattr(model_service, 'enabled', False) and answer:
-            try:
-                final_model_summary = await model_service.generate_consumer_summary(answer, question=message.message)
-                if final_model_summary:
-                    consumer_summary = final_model_summary
-                    consumer_summary_source = consumer_summary_source or 'model'
-                    consumer_summary_evidence_ids = consumer_summary_evidence_ids or []
-            except Exception:
-                # ignore and leave consumer_summary as-is
-                pass
-        
-        # Log the interaction with tracking data and provenance
-        metadata['consumer_summary'] = consumer_summary
-        # Construct a typed provenance object for the consumer summary
-        provenance = None
-        if consumer_summary_source:
-            provenance = {
-                'source': consumer_summary_source,
-                'evidence_ids': consumer_summary_evidence_ids or []
-            }
-            # also store a copy in top-level metadata for easy inspection
-            metadata['consumer_summary_provenance'] = provenance
-        # include a minimal debug flag about model availability for dev ops
+        # Log the interaction with tracking data
         metadata['model_enabled'] = getattr(model_service, 'enabled', False)
         log_service.create_chat_log(
             db=db,
@@ -327,10 +236,10 @@ Recent Literature: {json.dumps(drug_data.get('literature', []), indent=2)}
             session_id=session_id,
             model_used=model_service.model_name,
             response_time_ms=response_time_ms,
-            consumer_summary=consumer_summary,
+            consumer_summary=None,  # No longer using dual-view system
             sources=None,
             evidence=evidence_serializable,
-            provenance=provenance
+            provenance=None  # No longer tracking consumer summary provenance
         )
         
     except Exception as e:
@@ -357,32 +266,9 @@ Recent Literature: {json.dumps(drug_data.get('literature', []), indent=2)}
             model_used = "fallback-generic"
 
         # Prepare metadata including the error for logs
-        # Prepare metadata including the error for logs
         metadata = metadata if 'metadata' in locals() else {}
         metadata['error'] = error_msg
-
-        # Provide a short consumer summary for fallback responses as well (DB-only deterministic)
-        if 'evidence_serializable' in locals() and evidence_serializable:
-            db_summary, db_ids = build_consumer_summary_from_evidence(db, evidence_serializable, max_items=2)
-            if db_summary:
-                consumer_summary = db_summary
-                metadata['consumer_summary_source'] = 'db'
-                metadata['consumer_summary_evidence_ids'] = db_ids
-            else:
-                consumer_summary = "I can't reach the AI model right now. I don't have stored references that match your question — please try again later or consult a clinician."
-        else:
-            consumer_summary = "I can't reach the AI model right now. I don't have stored references that match your question — please try again later or consult a clinician."
-
-        # attach summary to metadata and log
-        metadata['consumer_summary'] = consumer_summary
-        # Attach provenance info for fallback (if available)
-        provenance = None
-        if 'consumer_summary_evidence_ids' in metadata:
-            provenance = {
-                'source': metadata.get('consumer_summary_source', 'db'),
-                'evidence_ids': metadata.get('consumer_summary_evidence_ids', [])
-            }
-            metadata['consumer_summary_provenance'] = provenance
+        
         # Log the fallback interaction
         log_service.create_chat_log(
             db=db,
@@ -401,10 +287,10 @@ Recent Literature: {json.dumps(drug_data.get('literature', []), indent=2)}
             session_id=session_id,
             model_used=model_used,
             response_time_ms=response_time_ms,
-            consumer_summary=consumer_summary,
+            consumer_summary=None,  # No longer using dual-view system
             sources=None,
             evidence=evidence_serializable if 'evidence_serializable' in locals() else None,
-            provenance=provenance
+            provenance=None
         )
 
 @router.get("/history/{session_id}")
