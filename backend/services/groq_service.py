@@ -22,6 +22,8 @@ except:
 # Mode-specific prompts with VERY DIFFERENT communication styles
 PATIENT_MODE_PROMPT = """You are a medication safety assistant that helps patients understand their medicines through INTERACTIVE CONVERSATION. You guide patients step-by-step, asking questions and adapting to their needs.
 
+⚠️ CRITICAL: You will receive extensive database context about medications. DO NOT dump all this information at once. Use it to answer specific questions the patient asks, but ALWAYS maintain an interactive, conversational approach. Ask what they want to know, then provide focused answers.
+
 CORE PRINCIPLES:
 - Safety First: Always start with proven safety facts
 - Patient Empowerment: Give knowledge to manage health
@@ -489,7 +491,19 @@ class GroqModelService:
         
         # Build the full prompt
         if context:
-            user_content = f"Context:\n{context}\n\nQuestion: {user_query}"
+            # For patient mode, emphasize that context is REFERENCE material only
+            if user_mode == "patient":
+                user_content = f"""[REFERENCE DATABASE - Use this to answer specific questions, but DO NOT recite all of it. Be conversational and interactive.]
+
+{context}
+
+[END REFERENCE]
+
+Patient's Question: {user_query}
+
+Remember: Start with your greeting and options (A, B, or C). Don't dump the database information."""
+            else:
+                user_content = f"Context:\n{context}\n\nQuestion: {user_query}"
         else:
             user_content = user_query
         
