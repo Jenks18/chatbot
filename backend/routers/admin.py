@@ -73,12 +73,30 @@ async def get_stats_overview(db: Session = Depends(get_db)):
 @router.get("/sessions")
 async def get_all_sessions(
     limit: int = Query(50, ge=1, le=500),
+    user_id: str = Query(None),  # Optional filter by user_id
     db: Session = Depends(get_db)
 ):
     """
     Get all sessions with message counts and metadata
+    If user_id is provided, filter to only that user's sessions
     """
-    sessions = db.query(SessionModel).order_by(
+    # Build base query
+    query = db.query(SessionModel)
+    
+    # Filter by user_id if provided
+    if user_id:
+        # Get session IDs that belong to this user
+        user_session_ids = db.query(ChatLog.session_id).filter(
+            ChatLog.user_id == user_id
+        ).distinct().all()
+        user_session_ids = [sid[0] for sid in user_session_ids]
+        
+        if not user_session_ids:
+            return []  # No sessions for this user
+        
+        query = query.filter(SessionModel.session_id.in_(user_session_ids))
+    
+    sessions = query.order_by(
         desc(SessionModel.last_active)
     ).limit(limit).all()
     

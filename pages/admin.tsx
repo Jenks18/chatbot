@@ -50,16 +50,22 @@ export default function Admin() {
   const [interactions, setInteractions] = useState<any[]>([]);
   const [pipelineResult, setPipelineResult] = useState<any | null>(null);
   const [activeTab, setActiveTab] = useState<'sessions' | 'stats'>('sessions');
+  
+  // Check if user is super admin (configure in Clerk dashboard: publicMetadata.role = "admin")
+  const isSuperAdmin = user?.publicMetadata?.role === 'admin';
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [user]);
 
   const loadData = async () => {
     setLoading(true);
     try {
+      // If super admin, load all sessions; otherwise load only user's sessions
+      const userId = isSuperAdmin ? undefined : user?.id;
+      
       const [sessionsData, statsData] = await Promise.all([
-        apiService.getAllSessions(100),
+        apiService.getAllSessions(100, userId),
         apiService.getStatsOverview(),
         // note: interactions fetched separately to keep initial load fast
       ]);
@@ -152,9 +158,17 @@ export default function Admin() {
             <div className="flex items-center gap-2 sm:gap-3">
               <span className="text-2xl sm:text-3xl">🧬</span>
               <div>
-                <h1 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white">Kandih ToxWiki — Admin</h1>
+                <h1 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white">
+                  Kandih ToxWiki — {isSuperAdmin ? 'Super Admin' : 'Admin'}
+                </h1>
                 <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 line-clamp-1">
-                  {isLoaded && user ? `Welcome, ${user.firstName || user.emailAddresses[0]?.emailAddress}` : 'Manage conversations, interactions, and reference data'}
+                  {isLoaded && user ? (
+                    <>
+                      Welcome, {user.firstName || user.emailAddresses[0]?.emailAddress}
+                      {isSuperAdmin && <span className="ml-2 text-purple-600 dark:text-purple-400 font-semibold">• Viewing All Users</span>}
+                      {!isSuperAdmin && <span className="ml-2 text-blue-600 dark:text-blue-400">• Your Sessions Only</span>}
+                    </>
+                  ) : 'Manage conversations, interactions, and reference data'}
                 </p>
               </div>
             </div>

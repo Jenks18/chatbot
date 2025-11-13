@@ -28,6 +28,7 @@ class handler(BaseHTTPRequestHandler):
             user_message = data.get('message', '')
             session_id = data.get('session_id') or str(uuid.uuid4())
             user_mode = data.get('user_mode', 'patient')
+            user_id = data.get('user_id')  # Get Clerk user ID
             
             if not user_message:
                 raise ValueError("Message is required")
@@ -156,6 +157,7 @@ class handler(BaseHTTPRequestHandler):
                 
                 chat_log = ChatLog(
                     session_id=session_id,
+                    user_id=user_id,  # Store Clerk user ID
                     question=user_message,
                     answer=ai_response,
                     model_used="groq/compound+free-apis",

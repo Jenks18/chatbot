@@ -215,7 +215,12 @@ export default function Home() {
     setLoading(true);
 
       try {
-      const response = await apiService.sendMessage(message, currentSessionId, userMode);
+      const response = await apiService.sendMessage(
+        message, 
+        currentSessionId, 
+        userMode,
+        user?.id // Pass Clerk user ID
+      );
 
       // Add assistant response with evidence
       const assistantMessage: Message = {

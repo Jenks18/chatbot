@@ -99,11 +99,12 @@ class ApiService {
   }
 
   // Chat endpoints
-  async sendMessage(message: string, sessionId?: string, userMode?: 'patient' | 'doctor' | 'researcher'): Promise<ChatResponse> {
+  async sendMessage(message: string, sessionId?: string, userMode?: 'patient' | 'doctor' | 'researcher', userId?: string): Promise<ChatResponse> {
     const response = await axios.post<ChatResponse>(this.buildEndpoint('/api/chat'), {
       message,
       session_id: sessionId,
       user_mode: userMode || 'patient',
+      user_id: userId,
     });
     return response.data;
   }
@@ -140,9 +141,9 @@ class ApiService {
     return response.data;
   }
 
-  async getAllSessions(limit: number = 50): Promise<any[]> {
+  async getAllSessions(limit: number = 50, userId?: string): Promise<any[]> {
     const response = await axios.get(this.buildEndpoint('/api/admin/sessions'), {
-      params: { limit },
+      params: { limit, user_id: userId },
     });
     return response.data;
   }
