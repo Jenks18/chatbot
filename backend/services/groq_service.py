@@ -478,17 +478,25 @@ class GroqModelService:
         
         # Build the full prompt
         if context:
-            # For patient mode, emphasize that context is REFERENCE material only
-            if user_mode == "patient":
-                user_content = f"""[REFERENCE DATABASE - Use this to answer specific questions, but DO NOT recite all of it. Be conversational and interactive.]
-
+            # For patient mode, check if this is a first-time query (no history)
+            if user_mode == "patient" and (not conversation_history or len(conversation_history) == 0):
+                # First time - enforce interactive greeting
+                user_content = f"""[MEDICATION DATABASE REFERENCE - Available for answering questions]
 {context}
+[END DATABASE]
 
+PATIENT'S FIRST QUESTION: {user_query}
+
+INSTRUCTION: This is the patient's FIRST question about this medication. You MUST respond with the interactive greeting and options (A, B, or C). Do NOT provide all the safety information yet. Ask what they want to know first."""
+            elif user_mode == "patient":
+                # Follow-up question - be conversational
+                user_content = f"""[REFERENCE DATA]
+{context}
 [END REFERENCE]
 
-Patient's Question: {user_query}
+Patient asks: {user_query}
 
-Remember: Start with your greeting and options (A, B, or C). Don't dump the database information."""
+Remember your conversational workflow. Answer their specific question and ask what they'd like to know next."""
             else:
                 user_content = f"Context:\n{context}\n\nQuestion: {user_query}"
         else:
