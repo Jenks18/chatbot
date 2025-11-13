@@ -127,8 +127,6 @@ Literature: {json.dumps(drug_data.get('literature', []), indent=2)}
             })
         
         metadata["evidence"] = evidence_serializable
-        consumer_summary = ""
-        provenance = None
         
         log_service.create_chat_log(
             db=db, session_id=session_id, question=message.message,
@@ -141,9 +139,9 @@ Literature: {json.dumps(drug_data.get('literature', []), indent=2)}
             answer=answer, session_id=session_id,
             model_used=model_service.model_name,
             response_time_ms=response_time_ms,
-            consumer_summary=consumer_summary,
+            consumer_summary=None,  # No longer using dual-view system
             sources=None, evidence=evidence_serializable,
-            provenance=provenance
+            provenance=None
         )
         
     except Exception as e:
@@ -171,7 +169,8 @@ Literature: {json.dumps(drug_data.get('literature', []), indent=2)}
         return ChatResponse(
             answer=answer, session_id=session_id,
             model_used="fallback", response_time_ms=response_time_ms,
-            consumer_summary="", sources=None,
+            consumer_summary=None,  # No longer using dual-view system
+            sources=None,
             evidence=evidence_serializable if 'evidence_serializable' in locals() else None,
             provenance=None
         )

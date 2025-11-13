@@ -64,14 +64,14 @@ class handler(BaseHTTPRequestHandler):
                 print(f"Error loading history: {hist_error}")
                 # Continue without history if there's an error
             
-            # Generate response using Groq
+            # Generate response using Groq with persona-based prompts
             # Run async function in sync context
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
             
             start_time = datetime.now()
             
-            # Generate technical response with conversation history
+            # Generate persona-specific response with conversation history
             ai_response = loop.run_until_complete(
                 model_service.generate_response(
                     query=user_message,
@@ -82,15 +82,7 @@ class handler(BaseHTTPRequestHandler):
                 )
             )
             
-            # Generate simple consumer summary (mode-aware)
-            consumer_summary = loop.run_until_complete(
-                model_service.generate_consumer_summary(
-                    technical_info=ai_response,
-                    drug_name="",
-                    question=user_message,
-                    user_mode=user_mode  # Pass mode for appropriate summary style
-                )
-            )
+            # No consumer_summary needed - using three-tier persona system
             
             end_time = datetime.now()
             response_time_ms = int((end_time - start_time).total_seconds() * 1000)
@@ -171,7 +163,6 @@ class handler(BaseHTTPRequestHandler):
                     ip_address=client_ip,
                     user_agent=user_agent,
                     extra_metadata={
-                        "consumer_summary": consumer_summary,
                         "user_mode": user_mode,
                         "references": references,
                         "geolocation": {
@@ -193,11 +184,13 @@ class handler(BaseHTTPRequestHandler):
             # Build response
             response = {
                 "answer": ai_response,
-                "consumer_summary": consumer_summary,
+                "consumer_summary": None,  # No longer using dual-view system
                 "session_id": session_id,
                 "model_used": "groq/compound+free-apis",
                 "response_time_ms": response_time_ms,
-                "sources": []
+                "sources": [],
+                "evidence": None,
+                "provenance": None
             }
             
             self.send_response(200)
