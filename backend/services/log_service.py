@@ -64,15 +64,19 @@ class LogService:
         user_agent: Optional[str] = None,
         ip_address: Optional[str] = None,
         geo_data: Optional[dict] = None,
-        extra_metadata: Optional[dict] = None
+        extra_metadata: Optional[dict] = None,
+        user_id: Optional[str] = None
     ) -> SessionModel:
-        """Create a new session or update existing one with geolocation data"""
+        """Create a new session or update existing one with geolocation data and user_id"""
         session = db.query(SessionModel).filter(
             SessionModel.session_id == session_id
         ).first()
 
         if session:
             session.last_active = datetime.utcnow()
+            # Update user_id if provided
+            if user_id and not session.user_id:
+                session.user_id = user_id
             # Update IP and geo data if changed
             if ip_address and ip_address != session.ip_address:
                 session.ip_address = ip_address
@@ -87,6 +91,7 @@ class LogService:
         else:
             session = SessionModel(
                 session_id=session_id,
+                user_id=user_id,
                 user_agent=user_agent,
                 ip_address=ip_address,
                 country=geo_data.get("country") if geo_data else None,

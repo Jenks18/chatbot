@@ -50,10 +50,6 @@ export default function Admin() {
   const [interactions, setInteractions] = useState<any[]>([]);
   const [pipelineResult, setPipelineResult] = useState<any | null>(null);
   const [activeTab, setActiveTab] = useState<'sessions' | 'stats'>('sessions');
-  const hasLoadedRef = useRef(false);
-  
-  // Check if user is super admin (configure in Clerk dashboard: publicMetadata.role = "admin")
-  const isSuperAdmin = user?.publicMetadata?.role === 'admin';
 
   const loadInteractions = useCallback(async () => {
     try {
@@ -67,22 +63,17 @@ export default function Admin() {
 
   // Load data on mount
   useEffect(() => {
-    if (!isLoaded) return;
-    if (!isSignedIn || !user) {
+    if (!isLoaded || !isSignedIn || !user) {
       setLoading(false);
       return;
     }
-    if (hasLoadedRef.current) return;
     
     const loadData = async () => {
-      hasLoadedRef.current = true;
       setLoading(true);
       try {
-        const isSuper = user?.publicMetadata?.role === 'admin';
-        const userId = isSuper ? undefined : user?.id;
-        
+        // Load all sessions without user filtering for now
         const [sessionsData, statsData] = await Promise.all([
-          apiService.getAllSessions(100, userId),
+          apiService.getAllSessions(100),
           apiService.getStatsOverview(),
         ]);
         
@@ -110,11 +101,8 @@ export default function Admin() {
     
     setLoading(true);
     try {
-      const isSuper = user?.publicMetadata?.role === 'admin';
-      const userId = isSuper ? undefined : user?.id;
-      
       const [sessionsData, statsData] = await Promise.all([
-        apiService.getAllSessions(100, userId),
+        apiService.getAllSessions(100),
         apiService.getStatsOverview(),
       ]);
       
@@ -227,14 +215,12 @@ export default function Admin() {
               <span className="text-2xl sm:text-3xl">🧬</span>
               <div>
                 <h1 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white">
-                  Kandih ToxWiki — {isSuperAdmin ? 'Super Admin' : 'Admin'}
+                  Kandih ToxWiki — Admin Dashboard
                 </h1>
                 <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 line-clamp-1">
                   {isLoaded && user ? (
                     <>
                       Welcome, {user.firstName || user.emailAddresses[0]?.emailAddress}
-                      {isSuperAdmin && <span className="ml-2 text-purple-600 dark:text-purple-400 font-semibold">• Viewing All Users</span>}
-                      {!isSuperAdmin && <span className="ml-2 text-blue-600 dark:text-blue-400">• Your Sessions Only</span>}
                     </>
                   ) : 'Manage conversations, interactions, and reference data'}
                 </p>

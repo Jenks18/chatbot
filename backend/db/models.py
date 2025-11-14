@@ -24,6 +24,7 @@ class Session(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     session_id = Column(String(100), unique=True, nullable=False, index=True)
+    user_id = Column(String(100), nullable=True, index=True)  # Clerk user ID
     user_agent = Column(Text)
     ip_address = Column(String(50))
     country = Column(String(100))  # Country from IP

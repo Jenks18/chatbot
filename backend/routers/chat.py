@@ -29,17 +29,19 @@ async def chat(
     # Capture tracking information
     user_agent = request.headers.get("user-agent", "unknown")
     client_ip = request.client.host if request.client else "unknown"
+    user_id = message.user_id  # Clerk user ID from frontend
     
     # Get geolocation data from IP
     geo_data = await geo_service.get_location_data(client_ip)
     
-    # Update session tracking with geolocation
+    # Update session tracking with geolocation and user_id
     log_service.create_or_update_session(
         db, 
         session_id, 
         user_agent, 
         client_ip,
-        geo_data=geo_data
+        geo_data=geo_data,
+        user_id=user_id
     )
     
     # Start timing
@@ -222,6 +224,7 @@ Recent Literature: {json.dumps(drug_data.get('literature', []), indent=2)}
         log_service.create_chat_log(
             db=db,
             session_id=session_id,
+            user_id=user_id,
             question=message.message,
             answer=answer,
             model_used=model_service.model_name,
