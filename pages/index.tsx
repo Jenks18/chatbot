@@ -153,6 +153,9 @@ export default function Home() {
     try {
       const history = await apiService.getChatHistory(sid, 100);
       console.log('[loadChatHistory] Received history:', history);
+      console.log('[loadChatHistory] history.history:', history?.history);
+      console.log('[loadChatHistory] history.history.length:', history?.history?.length);
+      console.log('[loadChatHistory] Full response structure:', JSON.stringify(history, null, 2));
       
       if (history && history.history && history.history.length > 0) {
         console.log('[loadChatHistory] Found', history.history.length, 'chat logs');
@@ -177,7 +180,7 @@ export default function Home() {
         setMessages(loadedMessages);
         return true; // Has messages
       } else {
-        console.log('[loadChatHistory] No chat history found for this session');
+        console.log('[loadChatHistory] No chat history found - history.history is empty or missing');
       }
       return false; // No messages
     } catch (err) {
