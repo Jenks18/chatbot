@@ -22,6 +22,14 @@ export default function Home() {
   const [userMode, setUserMode] = useState<'patient' | 'doctor' | 'researcher'>('patient');
   const [loadingHistory, setLoadingHistory] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  // Save messages to sessionStorage whenever they change
+  useEffect(() => {
+    if (messages.length > 0 && sessionId) {
+      sessionStorage.setItem(`chat_${sessionId}`, JSON.stringify(messages));
+      console.log('[SESSION] Saved', messages.length, 'messages to sessionStorage');
+    }
+  }, [messages, sessionId]);
 
   useEffect(() => {
     // Check if session ID is in URL
@@ -32,6 +40,23 @@ export default function Home() {
       // Load existing session from URL
       console.log('[SESSION] Found session in URL:', urlSessionId);
       setSessionId(urlSessionId);
+      
+      // Try to load from sessionStorage first (instant)
+      const cachedMessages = sessionStorage.getItem(`chat_${urlSessionId}`);
+      if (cachedMessages) {
+        try {
+          const parsed = JSON.parse(cachedMessages);
+          console.log('[SESSION] Restored', parsed.length, 'messages from sessionStorage');
+          setMessages(parsed.map((m: any) => ({
+            ...m,
+            timestamp: new Date(m.timestamp)
+          })));
+        } catch (e) {
+          console.error('[SESSION] Failed to parse cached messages:', e);
+        }
+      }
+      
+      // Also try to load from database (may update with newer messages)
       loadChatHistory(urlSessionId);
     } else {
       console.log('[SESSION] No session in URL - will create on first message');
@@ -250,6 +275,9 @@ export default function Home() {
   const handleClearChat = () => {
     if (confirm('Are you sure you want to start a new chat?')) {
       console.log('[SESSION] Clearing chat and creating new session');
+      if (sessionId) {
+        sessionStorage.removeItem(`chat_${sessionId}`);
+      }
       setMessages([]);
       setSessionId('');
       window.history.pushState({}, '', '/');
