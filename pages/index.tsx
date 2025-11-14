@@ -24,27 +24,20 @@ export default function Home() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Check if session ID is in URL (for shared links)
+    // Check if session ID is in URL
     const urlParams = new URLSearchParams(window.location.search);
     const urlSessionId = urlParams.get('session');
     
     if (urlSessionId) {
-      // Existing session from URL - load it
+      // Load existing session from URL
+      console.log('[SESSION] Found session in URL:', urlSessionId);
       setSessionId(urlSessionId);
-      localStorage.setItem('kandih_toxwiki_session', urlSessionId);
       loadChatHistory(urlSessionId);
     } else {
-      // Check if there's a session in localStorage with existing chat
-      const storedSessionId = localStorage.getItem('kandih_toxwiki_session');
-      if (storedSessionId) {
-        // Always keep the session and restore chat history
-        setSessionId(storedSessionId);
-        const newUrl = `${window.location.pathname}?session=${storedSessionId}`;
-        window.history.replaceState({}, '', newUrl);
-        loadChatHistory(storedSessionId);
-      }
-      // If no session at all, leave empty - will be created on first message
+      console.log('[SESSION] No session in URL - will create on first message');
     }
+    
+    // Health check
 
     // Check API health (with retry)
   const checkHealth = async () => {
@@ -147,45 +140,49 @@ export default function Home() {
     return () => window.removeEventListener('message', handleMessage);
   }, [sessionId]);
 
-  const loadChatHistory = async (sid: string): Promise<boolean> => {
+  const loadChatHistory = async (sid: string): Promise<void> => {
     setLoadingHistory(true);
-    console.log('[loadChatHistory] Loading history for session:', sid);
+    console.log('[SESSION] Loading chat history for:', sid);
+    
     try {
-      const history = await apiService.getChatHistory(sid, 100);
-      console.log('[loadChatHistory] Received history:', history);
-      console.log('[loadChatHistory] history.history:', history?.history);
-      console.log('[loadChatHistory] history.history.length:', history?.history?.length);
-      console.log('[loadChatHistory] Full response structure:', JSON.stringify(history, null, 2));
+      const response = await apiService.getChatHistory(sid, 100);
       
-      if (history && history.history && history.history.length > 0) {
-        console.log('[loadChatHistory] Found', history.history.length, 'chat logs');
-        // Convert chat logs to message format
-        const loadedMessages: Message[] = [];
-        for (const log of history.history) {
-          // Add user message
-          loadedMessages.push({
-            role: 'user',
-            content: log.question,
-            timestamp: new Date(log.created_at),
-          });
-          // Add assistant message
-          loadedMessages.push({
-            role: 'assistant',
-            content: log.answer,
-            timestamp: new Date(log.created_at),
-            evidence: log.extra_metadata?.evidence || undefined,
-          });
-        }
-        console.log('[loadChatHistory] Setting', loadedMessages.length, 'messages');
-        setMessages(loadedMessages);
-        return true; // Has messages
-      } else {
-        console.log('[loadChatHistory] No chat history found - history.history is empty or missing');
+      if (!response || !response.history) {
+        console.log('[SESSION] No history returned from API');
+        setLoadingHistory(false);
+        return;
       }
-      return false; // No messages
-    } catch (err) {
-      console.error('[loadChatHistory] Failed to load chat history:', err);
-      return false;
+      
+      console.log('[SESSION] Received', response.history.length, 'chat logs');
+      
+      if (response.history.length === 0) {
+        console.log('[SESSION] Session exists but no messages yet');
+        setLoadingHistory(false);
+        return;
+      }
+      
+      // Convert chat logs to messages
+      const loadedMessages: Message[] = [];
+      for (const log of response.history) {
+        loadedMessages.push({
+          role: 'user',
+          content: log.question,
+          timestamp: new Date(log.created_at),
+        });
+        loadedMessages.push({
+          role: 'assistant',
+          content: log.answer,
+          timestamp: new Date(log.created_at),
+          evidence: log.extra_metadata?.evidence || undefined,
+        });
+      }
+      
+      console.log('[SESSION] Loaded', loadedMessages.length, 'messages');
+      setMessages(loadedMessages);
+      
+    } catch (err: any) {
+      console.error('[SESSION] Failed to load history:', err);
+      setError('Failed to load chat history');
     } finally {
       setLoadingHistory(false);
     }
@@ -194,13 +191,14 @@ export default function Home() {
   const handleSend = async (message: string) => {
     setError(null);
     
-    // Create session on FIRST message if it doesn't exist
+    // Create session on first message
     let currentSessionId = sessionId;
     if (!currentSessionId) {
       currentSessionId = uuidv4();
+      console.log('[SESSION] Created new session:', currentSessionId);
       setSessionId(currentSessionId);
-      localStorage.setItem('kandih_toxwiki_session', currentSessionId);
-      // Update URL with new session ID
+      
+      // Update URL immediately
       const newUrl = `${window.location.pathname}?session=${currentSessionId}`;
       window.history.replaceState({}, '', newUrl);
     }
@@ -251,10 +249,9 @@ export default function Home() {
 
   const handleClearChat = () => {
     if (confirm('Are you sure you want to start a new chat?')) {
+      console.log('[SESSION] Clearing chat and creating new session');
       setMessages([]);
       setSessionId('');
-      localStorage.removeItem('kandih_toxwiki_session');
-      // Clear URL parameter
       window.history.pushState({}, '', '/');
     }
   };

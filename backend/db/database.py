@@ -39,23 +39,34 @@ sqlite_url = f"sqlite:///{os.path.abspath(sqlite_path)}"
 if USE_DEV_SQLITE:
     DATABASE_URL = sqlite_url
     engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+    print(f"[DB] Using DEV SQLite: {DATABASE_URL}")
 elif env_db_url and env_db_url.startswith("sqlite"):
     DATABASE_URL = env_db_url
     engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
-elif env_db_url and env_db_url.startswith("postgresql") and not HAS_POSTGRES:
-    # PostgreSQL URL but no psycopg2 - use in-memory SQLite
-    print("⚠️  PostgreSQL requested but psycopg2 not available - using in-memory SQLite")
-    DATABASE_URL = "sqlite:///:memory:"
-    engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+    print(f"[DB] Using SQLite from env: {DATABASE_URL}")
+elif env_db_url and env_db_url.startswith("postgresql"):
+    if not HAS_POSTGRES:
+        # PostgreSQL URL but no psycopg2 - FAIL HARD instead of silent fallback
+        raise ImportError("❌ DATABASE_URL is PostgreSQL but psycopg2 is not installed! Install psycopg2-binary")
+    # Use PostgreSQL from environment variable
+    DATABASE_URL = env_db_url
+    engine = create_engine(
+        DATABASE_URL,
+        pool_pre_ping=True,
+        pool_recycle=300,
+        connect_args={"connect_timeout": 10}
+    )
+    print(f"[DB] Using PostgreSQL from env: {DATABASE_URL[:50]}...")
 else:
-    DATABASE_URL = env_db_url or "postgresql://toxgpt_user:toxgpt_pass_2025@localhost:5432/toxicology_gpt"
-    # Add pool_pre_ping for serverless environments to handle stale connections
+    # No DATABASE_URL set - use default local postgres
+    DATABASE_URL = "postgresql://toxgpt_user:toxgpt_pass_2025@localhost:5432/toxicology_gpt"
     engine = create_engine(
         DATABASE_URL,
         pool_pre_ping=True,
         pool_recycle=300,
         connect_args={"connect_timeout": 5}
     )
+    print(f"[DB] Using default local PostgreSQL")
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()

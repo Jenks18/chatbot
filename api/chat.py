@@ -109,12 +109,8 @@ class handler(BaseHTTPRequestHandler):
                 user_agent = self.headers.get('User-Agent', 'unknown')
                 print(f"[SAVE] Client IP: {client_ip}, User Agent: {user_agent[:50]}")
                 
-                # Get geolocation data from IP (city, region, country)
+                # Skip geolocation for now - causes async issues
                 geo_data = None
-                try:
-                    geo_data = loop.run_until_complete(geo_service.get_location_data(client_ip))
-                except Exception as geo_error:
-                    print(f"Geolocation lookup failed: {geo_error}")
                 
                 # Create or update session with location data
                 existing_session = db.query(SessionModel).filter(
@@ -182,9 +178,10 @@ class handler(BaseHTTPRequestHandler):
                 )
                 print(f"[SAVE] ChatLog object created, adding to session")
                 db.add(chat_log)
-                print(f"[SAVE] Committing to database")
+                db.flush()  # Flush to assign ID
+                print(f"[SAVE] Flushed, now committing to database")
                 db.commit()
-                print(f"[SAVE] Successfully saved chat log for session {session_id}")
+                print(f"[SAVE] ✅ Successfully saved chat log ID {chat_log.id} for session {session_id}")
                 db.close()
             except Exception as db_error:
                 print(f"[SAVE ERROR] Database save failed: {db_error}")
