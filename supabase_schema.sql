@@ -5,6 +5,7 @@
 CREATE TABLE IF NOT EXISTS sessions (
     id SERIAL PRIMARY KEY,
     session_id VARCHAR(100) UNIQUE NOT NULL,
+    user_id VARCHAR(100),
     user_agent TEXT,
     ip_address VARCHAR(50),
     country VARCHAR(100),
@@ -19,6 +20,7 @@ CREATE TABLE IF NOT EXISTS sessions (
 );
 
 CREATE INDEX IF NOT EXISTS idx_sessions_session_id ON sessions(session_id);
+CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_last_active ON sessions(last_active);
 
 -- Chat logs table
