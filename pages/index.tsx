@@ -301,14 +301,6 @@ export default function Home() {
                   <span className="hidden xs:inline">Clear</span>
                   <span className="xs:hidden">🗑️</span>
                 </button>
-                
-                {/* Admin Link */}
-                <a
-                  href="/admin"
-                  className="px-2 xs:px-3 sm:px-4 py-1 xs:py-1.5 sm:py-2 text-[10px] xs:text-xs sm:text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md sm:rounded-lg hover:bg-slate-50 transition-colors"
-                >
-                  Admin
-                </a>
               </div>
             </div>
           </div>
