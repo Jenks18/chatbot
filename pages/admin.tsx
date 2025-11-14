@@ -95,7 +95,43 @@ export default function Admin() {
     }
   };
 
+  // Load data on mount
+  useEffect(() => {
+    if (!isSignedIn || !user) return;
+    
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        const isSuper = user?.publicMetadata?.role === 'admin';
+        const userId = isSuper ? undefined : user?.id;
+        
+        const [sessionsData, statsData] = await Promise.all([
+          apiService.getAllSessions(100, userId),
+          apiService.getStatsOverview(),
+        ]);
+        
+        const validSessions = Array.isArray(sessionsData) 
+          ? sessionsData.filter(s => s && s.session_id) 
+          : [];
+        
+        setSessions(validSessions);
+        setStats(statsData || null);
+        await loadInteractions();
+      } catch (error) {
+        console.error('Failed to load admin data:', error);
+        setSessions([]);
+        setStats(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadData();
+  }, [isSignedIn]);
+
   const refreshData = async () => {
+    if (!user) return;
+    
     setLoading(true);
     try {
       const isSuper = user?.publicMetadata?.role === 'admin';
@@ -121,13 +157,6 @@ export default function Admin() {
       setLoading(false);
     }
   };
-
-  // Load data on mount
-  useEffect(() => {
-    if (isSignedIn && user) {
-      refreshData();
-    }
-  }, [isSignedIn]);
 
   const runPipeline = async () => {
     try {
