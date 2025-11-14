@@ -91,12 +91,15 @@ class handler(BaseHTTPRequestHandler):
             loop.close()
             
             # Save to database
+            db = None
             try:
                 from backend.db.database import SessionLocal
                 from backend.db.models import ChatLog, Session as SessionModel
                 from backend.services.geo_service import geo_service
                 
+                print(f"[SAVE] Attempting to save chat to database for session: {session_id}")
                 db = SessionLocal()
+                print(f"[SAVE] Database connection established")
                 
                 # Get client IP
                 client_ip = self.headers.get('X-Forwarded-For', '').split(',')[0].strip() or \
@@ -104,6 +107,7 @@ class handler(BaseHTTPRequestHandler):
                            self.client_address[0]
                 
                 user_agent = self.headers.get('User-Agent', 'unknown')
+                print(f"[SAVE] Client IP: {client_ip}, User Agent: {user_agent[:50]}")
                 
                 # Get geolocation data from IP (city, region, country)
                 geo_data = None
@@ -176,11 +180,20 @@ class handler(BaseHTTPRequestHandler):
                         } if geo_data else None
                     }
                 )
+                print(f"[SAVE] ChatLog object created, adding to session")
                 db.add(chat_log)
+                print(f"[SAVE] Committing to database")
                 db.commit()
+                print(f"[SAVE] Successfully saved chat log for session {session_id}")
                 db.close()
             except Exception as db_error:
-                print(f"Database save error: {db_error}")
+                print(f"[SAVE ERROR] Database save failed: {db_error}")
+                print(f"[SAVE ERROR] Error type: {type(db_error).__name__}")
+                import traceback
+                print(f"[SAVE ERROR] Traceback: {traceback.format_exc()}")
+                if db:
+                    db.rollback()
+                    db.close()
                 # Continue even if database fails
             
             # Build response
