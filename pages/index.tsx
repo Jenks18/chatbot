@@ -149,9 +149,13 @@ export default function Home() {
 
   const loadChatHistory = async (sid: string): Promise<boolean> => {
     setLoadingHistory(true);
+    console.log('[loadChatHistory] Loading history for session:', sid);
     try {
       const history = await apiService.getChatHistory(sid, 100);
+      console.log('[loadChatHistory] Received history:', history);
+      
       if (history && history.history && history.history.length > 0) {
+        console.log('[loadChatHistory] Found', history.history.length, 'chat logs');
         // Convert chat logs to message format
         const loadedMessages: Message[] = [];
         for (const log of history.history) {
@@ -169,12 +173,15 @@ export default function Home() {
             evidence: log.extra_metadata?.evidence || undefined,
           });
         }
+        console.log('[loadChatHistory] Setting', loadedMessages.length, 'messages');
         setMessages(loadedMessages);
         return true; // Has messages
+      } else {
+        console.log('[loadChatHistory] No chat history found for this session');
       }
       return false; // No messages
     } catch (err) {
-      console.error('Failed to load chat history:', err);
+      console.error('[loadChatHistory] Failed to load chat history:', err);
       return false;
     } finally {
       setLoadingHistory(false);
