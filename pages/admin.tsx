@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { apiService, StatsOverview } from '../services/api';
@@ -50,9 +50,124 @@ export default function Admin() {
   const [interactions, setInteractions] = useState<any[]>([]);
   const [pipelineResult, setPipelineResult] = useState<any | null>(null);
   const [activeTab, setActiveTab] = useState<'sessions' | 'stats'>('sessions');
+  const hasLoadedRef = useRef(false);
   
   // Check if user is super admin (configure in Clerk dashboard: publicMetadata.role = "admin")
   const isSuperAdmin = user?.publicMetadata?.role === 'admin';
+
+  const loadInteractions = useCallback(async () => {
+    try {
+      const data = await apiService.getInteractions(200);
+      setInteractions(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Failed to load interactions', err);
+      setInteractions([]);
+    }
+  }, []);
+
+  // Load data on mount
+  useEffect(() => {
+    if (!isLoaded) return;
+    if (!isSignedIn || !user) {
+      setLoading(false);
+      return;
+    }
+    if (hasLoadedRef.current) return;
+    
+    const loadData = async () => {
+      hasLoadedRef.current = true;
+      setLoading(true);
+      try {
+        const isSuper = user?.publicMetadata?.role === 'admin';
+        const userId = isSuper ? undefined : user?.id;
+        
+        const [sessionsData, statsData] = await Promise.all([
+          apiService.getAllSessions(100, userId),
+          apiService.getStatsOverview(),
+        ]);
+        
+        const validSessions = Array.isArray(sessionsData) 
+          ? sessionsData.filter(s => s && s.session_id) 
+          : [];
+        
+        setSessions(validSessions);
+        setStats(statsData || null);
+        await loadInteractions();
+      } catch (error) {
+        console.error('Failed to load admin data:', error);
+        setSessions([]);
+        setStats(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadData();
+  }, [isLoaded, isSignedIn, user, loadInteractions]);
+
+  const refreshData = useCallback(async () => {
+    if (!user) return;
+    
+    setLoading(true);
+    try {
+      const isSuper = user?.publicMetadata?.role === 'admin';
+      const userId = isSuper ? undefined : user?.id;
+      
+      const [sessionsData, statsData] = await Promise.all([
+        apiService.getAllSessions(100, userId),
+        apiService.getStatsOverview(),
+      ]);
+      
+      const validSessions = Array.isArray(sessionsData) 
+        ? sessionsData.filter(s => s && s.session_id) 
+        : [];
+      
+      setSessions(validSessions);
+      setStats(statsData || null);
+      await loadInteractions();
+    } catch (error) {
+      console.error('Failed to load admin data:', error);
+      setSessions([]);
+      setStats(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [user, loadInteractions]);
+
+  const runPipeline = useCallback(async () => {
+    try {
+      setPipelineResult(null);
+      const res = await apiService.runFetchReferences(200);
+      setPipelineResult(res);
+      // reload interactions to show excerpts
+      await loadInteractions();
+    } catch (err) {
+      console.error('Pipeline failed', err);
+    }
+  }, [loadInteractions]);
+
+  const loadSessionHistory = useCallback(async (sessionId: string) => {
+    try {
+      const history = await apiService.getSessionHistory(sessionId);
+      
+      // Validate the response
+      if (!history || !history.session_id) {
+        console.error('Invalid session history response:', history);
+        alert('Failed to load session history: Invalid response from server');
+        return;
+      }
+      
+      // Ensure messages array exists
+      if (!history.messages) {
+        history.messages = [];
+      }
+      
+      setSelectedSession(history);
+    } catch (error) {
+      console.error('Failed to load session history:', error);
+      alert('Failed to load session history. Please try again.');
+    }
+  }, []);
 
   // If not loaded yet, show loading
   if (!isLoaded) {
@@ -84,114 +199,6 @@ export default function Admin() {
       </div>
     );
   }
-
-  const loadInteractions = async () => {
-    try {
-      const data = await apiService.getInteractions(200);
-      setInteractions(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error('Failed to load interactions', err);
-      setInteractions([]);
-    }
-  };
-
-  // Load data on mount
-  useEffect(() => {
-    if (!isSignedIn || !user) return;
-    
-    const loadData = async () => {
-      setLoading(true);
-      try {
-        const isSuper = user?.publicMetadata?.role === 'admin';
-        const userId = isSuper ? undefined : user?.id;
-        
-        const [sessionsData, statsData] = await Promise.all([
-          apiService.getAllSessions(100, userId),
-          apiService.getStatsOverview(),
-        ]);
-        
-        const validSessions = Array.isArray(sessionsData) 
-          ? sessionsData.filter(s => s && s.session_id) 
-          : [];
-        
-        setSessions(validSessions);
-        setStats(statsData || null);
-        await loadInteractions();
-      } catch (error) {
-        console.error('Failed to load admin data:', error);
-        setSessions([]);
-        setStats(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    loadData();
-  }, [isSignedIn]);
-
-  const refreshData = async () => {
-    if (!user) return;
-    
-    setLoading(true);
-    try {
-      const isSuper = user?.publicMetadata?.role === 'admin';
-      const userId = isSuper ? undefined : user?.id;
-      
-      const [sessionsData, statsData] = await Promise.all([
-        apiService.getAllSessions(100, userId),
-        apiService.getStatsOverview(),
-      ]);
-      
-      const validSessions = Array.isArray(sessionsData) 
-        ? sessionsData.filter(s => s && s.session_id) 
-        : [];
-      
-      setSessions(validSessions);
-      setStats(statsData || null);
-      await loadInteractions();
-    } catch (error) {
-      console.error('Failed to load admin data:', error);
-      setSessions([]);
-      setStats(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const runPipeline = async () => {
-    try {
-      setPipelineResult(null);
-      const res = await apiService.runFetchReferences(200);
-      setPipelineResult(res);
-      // reload interactions to show excerpts
-      loadInteractions();
-    } catch (err) {
-      console.error('Pipeline failed', err);
-    }
-  };
-
-  const loadSessionHistory = async (sessionId: string) => {
-    try {
-      const history = await apiService.getSessionHistory(sessionId);
-      
-      // Validate the response
-      if (!history || !history.session_id) {
-        console.error('Invalid session history response:', history);
-        alert('Failed to load session history: Invalid response from server');
-        return;
-      }
-      
-      // Ensure messages array exists
-      if (!history.messages) {
-        history.messages = [];
-      }
-      
-      setSelectedSession(history);
-    } catch (error) {
-      console.error('Failed to load session history:', error);
-      alert('Failed to load session history. Please try again.');
-    }
-  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString();

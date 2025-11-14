@@ -161,8 +161,14 @@ class handler(BaseHTTPRequestHandler):
             elif '/api/admin/sessions' in self.path:
                 # Get all sessions (must come AFTER the history check)
                 limit = int(query_params.get('limit', [100])[0])
+                user_id = query_params.get('user_id', [None])[0]
+
+                query = db.query(SessionModel)
                 
-                sessions = db.query(SessionModel).order_by(desc(SessionModel.last_active)).limit(limit).all()
+                if user_id:
+                    query = query.filter(SessionModel.user_id == user_id)
+                
+                sessions = query.order_by(desc(SessionModel.last_active)).limit(limit).all()
                 
                 result = []
                 for session in sessions:
