@@ -43,7 +43,6 @@ interface SessionHistory {
 
 export default function Admin() {
   const { user, isLoaded, isSignedIn } = useUser();
-  const hasLoadedRef = useRef(false);
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
   const [stats, setStats] = useState<StatsOverview | null>(null);
   const [loading, setLoading] = useState(true);
@@ -86,75 +85,6 @@ export default function Admin() {
     );
   }
 
-  useEffect(() => {
-    // Only run once when component mounts and user is signed in
-    if (isSignedIn && user && !hasLoadedRef.current) {
-      hasLoadedRef.current = true;
-      
-      const loadData = async () => {
-        setLoading(true);
-        try {
-          // Check super admin status inside useEffect to avoid dependency issues
-          const isSuper = user?.publicMetadata?.role === 'admin';
-          const userId = isSuper ? undefined : user?.id;
-          
-          const [sessionsData, statsData] = await Promise.all([
-            apiService.getAllSessions(100, userId),
-            apiService.getStatsOverview(),
-            // note: interactions fetched separately to keep initial load fast
-          ]);
-          
-          // Ensure sessionsData is an array and filter out invalid entries
-          const validSessions = Array.isArray(sessionsData) 
-            ? sessionsData.filter(s => s && s.session_id) 
-            : [];
-          
-          setSessions(validSessions);
-          setStats(statsData || null);
-          loadInteractions();
-        } catch (error) {
-          console.error('Failed to load admin data:', error);
-          setSessions([]);
-          setStats(null);
-        } finally {
-          setLoading(false);
-        }
-      };
-      
-      loadData();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const refreshData = async () => {
-    setLoading(true);
-    try {
-      // Check super admin status to avoid dependency on isSuperAdmin
-      const isSuper = user?.publicMetadata?.role === 'admin';
-      const userId = isSuper ? undefined : user?.id;
-      
-      const [sessionsData, statsData] = await Promise.all([
-        apiService.getAllSessions(100, userId),
-        apiService.getStatsOverview(),
-      ]);
-      
-      // Ensure sessionsData is an array and filter out invalid entries
-      const validSessions = Array.isArray(sessionsData) 
-        ? sessionsData.filter(s => s && s.session_id) 
-        : [];
-      
-      setSessions(validSessions);
-      setStats(statsData || null);
-      loadInteractions();
-    } catch (error) {
-      console.error('Failed to load admin data:', error);
-      setSessions([]);
-      setStats(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const loadInteractions = async () => {
     try {
       const data = await apiService.getInteractions(200);
@@ -164,6 +94,40 @@ export default function Admin() {
       setInteractions([]);
     }
   };
+
+  const refreshData = async () => {
+    setLoading(true);
+    try {
+      const isSuper = user?.publicMetadata?.role === 'admin';
+      const userId = isSuper ? undefined : user?.id;
+      
+      const [sessionsData, statsData] = await Promise.all([
+        apiService.getAllSessions(100, userId),
+        apiService.getStatsOverview(),
+      ]);
+      
+      const validSessions = Array.isArray(sessionsData) 
+        ? sessionsData.filter(s => s && s.session_id) 
+        : [];
+      
+      setSessions(validSessions);
+      setStats(statsData || null);
+      await loadInteractions();
+    } catch (error) {
+      console.error('Failed to load admin data:', error);
+      setSessions([]);
+      setStats(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load data on mount
+  useEffect(() => {
+    if (isSignedIn && user) {
+      refreshData();
+    }
+  }, [isSignedIn]);
 
   const runPipeline = async () => {
     try {
