@@ -37,19 +37,11 @@ export default function Home() {
       // Check if there's a session in localStorage with existing chat
       const storedSessionId = localStorage.getItem('kandih_toxwiki_session');
       if (storedSessionId) {
-        // Check if this session has messages in database
-        loadChatHistory(storedSessionId).then((hasMessages) => {
-          if (hasMessages) {
-            // Session has history, keep it and update URL
-            setSessionId(storedSessionId);
-            const newUrl = `${window.location.pathname}?session=${storedSessionId}`;
-            window.history.replaceState({}, '', newUrl);
-          } else {
-            // Empty session, clear it - user will get new session on first message
-            localStorage.removeItem('kandih_toxwiki_session');
-            setSessionId('');
-          }
-        });
+        // Always keep the session and restore chat history
+        setSessionId(storedSessionId);
+        const newUrl = `${window.location.pathname}?session=${storedSessionId}`;
+        window.history.replaceState({}, '', newUrl);
+        loadChatHistory(storedSessionId);
       }
       // If no session at all, leave empty - will be created on first message
     }
