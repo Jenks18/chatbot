@@ -4,7 +4,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { apiService } from '../services/api';
 import { ChatMessage, ChatInput } from '../components/ChatInterface';
 import { LoadingSpinner, ErrorMessage, WelcomeMessage } from '../components/UIComponents';
-import { SignInButton, SignUpButton, UserButton, useUser } from '@clerk/nextjs';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -14,7 +13,6 @@ interface Message {
 }
 
 export default function Home() {
-  const { isSignedIn, user } = useUser();
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -219,7 +217,7 @@ export default function Home() {
         message, 
         currentSessionId, 
         userMode,
-        user?.id // Pass Clerk user ID
+        undefined // No user ID without Clerk
       );
 
       // Add assistant response with evidence
@@ -304,38 +302,13 @@ export default function Home() {
                   <span className="xs:hidden">🗑️</span>
                 </button>
                 
-                {/* Auth Buttons - Compact on mobile */}
-                {!isSignedIn ? (
-                  <>
-                    <SignInButton mode="modal">
-                      <button className="px-2 xs:px-3 sm:px-4 py-1 xs:py-1.5 sm:py-2 text-[10px] xs:text-xs sm:text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md sm:rounded-lg hover:bg-slate-50 transition-colors">
-                        Log In
-                      </button>
-                    </SignInButton>
-                    <SignUpButton mode="modal">
-                      <button className="px-2 xs:px-3 sm:px-4 py-1 xs:py-1.5 sm:py-2 text-[10px] xs:text-xs sm:text-sm font-medium text-white bg-orange-500 rounded-md sm:rounded-lg hover:bg-orange-600 transition-colors">
-                        Sign Up
-                      </button>
-                    </SignUpButton>
-                  </>
-                ) : (
-                  <>
-                    <a
-                      href="/admin"
-                      className="px-2 xs:px-3 sm:px-4 py-1 xs:py-1.5 sm:py-2 text-[10px] xs:text-xs sm:text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md sm:rounded-lg hover:bg-slate-50 transition-colors"
-                    >
-                      Admin
-                    </a>
-                    <UserButton 
-                      afterSignOutUrl="/"
-                      appearance={{
-                        elements: {
-                          avatarBox: "w-7 h-7 xs:w-8 xs:h-8 sm:w-9 sm:h-9"
-                        }
-                      }}
-                    />
-                  </>
-                )}
+                {/* Admin Link */}
+                <a
+                  href="/admin"
+                  className="px-2 xs:px-3 sm:px-4 py-1 xs:py-1.5 sm:py-2 text-[10px] xs:text-xs sm:text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md sm:rounded-lg hover:bg-slate-50 transition-colors"
+                >
+                  Admin
+                </a>
               </div>
             </div>
           </div>

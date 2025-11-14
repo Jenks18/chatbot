@@ -1,8 +1,7 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { apiService, StatsOverview } from '../services/api';
-import { UserButton, useUser, SignIn } from '@clerk/nextjs';
 
 interface SessionInfo {
   session_id: string;
@@ -42,7 +41,6 @@ interface SessionHistory {
 }
 
 export default function Admin() {
-  const { user, isLoaded, isSignedIn } = useUser();
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
   const [stats, setStats] = useState<StatsOverview | null>(null);
   const [loading, setLoading] = useState(true);
@@ -63,15 +61,10 @@ export default function Admin() {
 
   // Load data on mount
   useEffect(() => {
-    if (!isLoaded || !isSignedIn || !user) {
-      setLoading(false);
-      return;
-    }
-    
     const loadData = async () => {
       setLoading(true);
       try {
-        // Load all sessions without user filtering for now
+        // Load all sessions
         const [sessionsData, statsData] = await Promise.all([
           apiService.getAllSessions(100),
           apiService.getStatsOverview(),
@@ -94,10 +87,9 @@ export default function Admin() {
     };
     
     loadData();
-  }, [isLoaded, isSignedIn, user, loadInteractions]);
+  }, [loadInteractions]);
 
   const refreshData = useCallback(async () => {
-    if (!user) return;
     
     setLoading(true);
     try {
@@ -120,7 +112,7 @@ export default function Admin() {
     } finally {
       setLoading(false);
     }
-  }, [user, loadInteractions]);
+  }, [loadInteractions]);
 
   const runPipeline = useCallback(async () => {
     try {
@@ -157,37 +149,6 @@ export default function Admin() {
     }
   }, []);
 
-  // If not loaded yet, show loading
-  if (!isLoaded) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-2xl">🧬</div>
-          <p className="text-gray-600 dark:text-gray-400 mt-4">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // If not signed in, show sign in
-  if (!isSignedIn) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="max-w-md w-full">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-              🧬 Admin Access Required
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400">
-              Please sign in to access the admin dashboard
-            </p>
-          </div>
-          <SignIn routing="hash" />
-        </div>
-      </div>
-    );
-  }
-
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString();
   };
@@ -218,11 +179,7 @@ export default function Admin() {
                   Kandih ToxWiki — Admin Dashboard
                 </h1>
                 <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 line-clamp-1">
-                  {isLoaded && user ? (
-                    <>
-                      Welcome, {user.firstName || user.emailAddresses[0]?.emailAddress}
-                    </>
-                  ) : 'Manage conversations, interactions, and reference data'}
+                  Manage conversations, interactions, and reference data
                 </p>
               </div>
             </div>
@@ -251,14 +208,6 @@ export default function Admin() {
               >
                 ← Back to Chat
               </Link>
-              <UserButton 
-                afterSignOutUrl="/"
-                appearance={{
-                  elements: {
-                    avatarBox: "w-9 h-9"
-                  }
-                }}
-              />
             </div>
           </div>
         </header>
