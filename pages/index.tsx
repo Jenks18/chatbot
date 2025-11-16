@@ -30,6 +30,14 @@ export default function Home() {
       console.log('[SESSION] Saved', messages.length, 'messages to sessionStorage');
     }
   }, [messages, sessionId]);
+  
+  // Save user mode to sessionStorage whenever it changes
+  useEffect(() => {
+    if (sessionId) {
+      sessionStorage.setItem(`mode_${sessionId}`, userMode);
+      console.log('[SESSION] Saved mode:', userMode);
+    }
+  }, [userMode, sessionId]);
 
   useEffect(() => {
     // Check if session ID is in URL
@@ -54,6 +62,13 @@ export default function Home() {
         } catch (e) {
           console.error('[SESSION] Failed to parse cached messages:', e);
         }
+      }
+      
+      // Restore user mode
+      const cachedMode = sessionStorage.getItem(`mode_${urlSessionId}`);
+      if (cachedMode && (cachedMode === 'patient' || cachedMode === 'doctor' || cachedMode === 'researcher')) {
+        console.log('[SESSION] Restored mode:', cachedMode);
+        setUserMode(cachedMode as 'patient' | 'doctor' | 'researcher');
       }
       
       // Also try to load from database (may update with newer messages)
@@ -277,9 +292,11 @@ export default function Home() {
       console.log('[SESSION] Clearing chat and creating new session');
       if (sessionId) {
         sessionStorage.removeItem(`chat_${sessionId}`);
+        sessionStorage.removeItem(`mode_${sessionId}`);
       }
       setMessages([]);
       setSessionId('');
+      setUserMode('patient'); // Reset to default
       window.history.pushState({}, '', '/');
     }
   };
