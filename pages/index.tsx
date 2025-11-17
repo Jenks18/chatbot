@@ -22,6 +22,27 @@ export default function Home() {
   const [userMode, setUserMode] = useState<'patient' | 'doctor' | 'researcher'>('patient');
   const [loadingHistory, setLoadingHistory] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const isDev = process.env.NODE_ENV === 'development';
+
+  // Suppress browser extension errors
+  useEffect(() => {
+    const originalError = console.error;
+    console.error = (...args) => {
+      const errorMsg = args[0]?.toString() || '';
+      // Filter out browser extension errors
+      if (
+        errorMsg.includes('Could not establish connection') ||
+        errorMsg.includes('Receiving end does not exist') ||
+        errorMsg.includes('Extension context invalidated')
+      ) {
+        return; // Suppress these errors
+      }
+      originalError.apply(console, args);
+    };
+    return () => {
+      console.error = originalError;
+    };
+  }, []);
 
   useEffect(() => {
     // Check if session ID is in URL
@@ -30,7 +51,7 @@ export default function Home() {
     
     if (urlSessionId) {
       // Load existing session from URL
-      console.log('[SESSION] Found session in URL:', urlSessionId);
+      if (isDev) console.log('[SESSION] Found session in URL:', urlSessionId);
       setSessionId(urlSessionId);
       
       // Try to load from sessionStorage first (for page refresh persistence)
@@ -38,7 +59,7 @@ export default function Home() {
       if (cachedData) {
         try {
           const { messages: cachedMessages, mode } = JSON.parse(cachedData);
-          console.log('[SESSION] Restored', cachedMessages.length, 'messages and mode:', mode);
+          if (isDev) console.log('[SESSION] Restored', cachedMessages.length, 'messages and mode:', mode);
           setMessages(cachedMessages.map((m: any) => ({
             ...m,
             timestamp: new Date(m.timestamp)
@@ -54,7 +75,7 @@ export default function Home() {
       // Also try to load from database (may update with newer messages)
       loadChatHistory(urlSessionId);
     } else {
-      console.log('[SESSION] No session in URL - will create on first message');
+      if (isDev) console.log('[SESSION] No session in URL - will create on first message');
     }
     
     // Health check
@@ -162,21 +183,21 @@ export default function Home() {
 
   const loadChatHistory = async (sid: string): Promise<void> => {
     setLoadingHistory(true);
-    console.log('[SESSION] Loading chat history for:', sid);
+    if (isDev) console.log('[SESSION] Loading chat history for:', sid);
     
     try {
       const response = await apiService.getChatHistory(sid, 100);
       
       if (!response || !response.history) {
-        console.log('[SESSION] No history returned from API');
+        if (isDev) console.log('[SESSION] No history returned from API');
         setLoadingHistory(false);
         return;
       }
       
-      console.log('[SESSION] Received', response.history.length, 'chat logs');
+      if (isDev) console.log('[SESSION] Received', response.history.length, 'chat logs');
       
       if (response.history.length === 0) {
-        console.log('[SESSION] Session exists but no messages yet');
+        if (isDev) console.log('[SESSION] Session exists but no messages yet');
         setLoadingHistory(false);
         return;
       }
@@ -197,11 +218,11 @@ export default function Home() {
         });
       }
       
-      console.log('[SESSION] Loaded', loadedMessages.length, 'messages');
+      if (isDev) console.log('[SESSION] Loaded', loadedMessages.length, 'messages');
       setMessages(loadedMessages);
       
     } catch (err: any) {
-      console.error('[SESSION] Failed to load history:', err);
+      if (isDev) console.error('[SESSION] Failed to load history:', err);
       setError('Failed to load chat history');
     } finally {
       setLoadingHistory(false);
@@ -215,7 +236,7 @@ export default function Home() {
     let currentSessionId = sessionId;
     if (!currentSessionId) {
       currentSessionId = uuidv4();
-      console.log('[SESSION] Created new session:', currentSessionId);
+      if (isDev) console.log('[SESSION] Created new session:', currentSessionId);
       setSessionId(currentSessionId);
       
       // Update URL immediately
@@ -287,7 +308,7 @@ export default function Home() {
 
   const handleClearChat = () => {
     if (confirm('Are you sure you want to start a new chat?')) {
-      console.log('[SESSION] Clearing chat and creating new session');
+      if (isDev) console.log('[SESSION] Clearing chat and creating new session');
       if (sessionId) {
         sessionStorage.removeItem(`session_${sessionId}`);
       }
