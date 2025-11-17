@@ -46,6 +46,8 @@ class handler(BaseHTTPRequestHandler):
                     ChatLog.session_id == session_id
                 ).order_by(ChatLog.created_at.desc()).limit(10).all()
                 
+                print(f"[HISTORY] Found {len(previous_messages)} previous messages in database")
+                
                 # Reverse to get chronological order
                 previous_messages = list(reversed(previous_messages))
                 
@@ -61,8 +63,15 @@ class handler(BaseHTTPRequestHandler):
                     })
                 
                 db.close()
+                
+                if len(conversation_history) > 0:
+                    print(f"[HISTORY] Using {len(conversation_history)} messages for context")
+                else:
+                    print(f"[HISTORY] No previous messages found for session {session_id}")
+                    
             except Exception as hist_error:
-                print(f"Error loading history: {hist_error}")
+                print(f"[HISTORY ERROR] Failed to load history: {hist_error}")
+                print(f"[HISTORY ERROR] Error type: {type(hist_error).__name__}")
                 # Continue without history if there's an error
             
             # Generate response using Groq with persona-based prompts
