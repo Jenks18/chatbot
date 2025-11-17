@@ -99,12 +99,19 @@ class ApiService {
   }
 
   // Chat endpoints
-  async sendMessage(message: string, sessionId?: string, userMode?: 'patient' | 'doctor' | 'researcher', userId?: string): Promise<ChatResponse> {
+  async sendMessage(
+    message: string, 
+    sessionId?: string, 
+    userMode?: 'patient' | 'doctor' | 'researcher', 
+    userId?: string,
+    conversationHistory?: Array<{role: string; content: string}>
+  ): Promise<ChatResponse> {
     const response = await axios.post<ChatResponse>(this.buildEndpoint('/api/chat'), {
       message,
       session_id: sessionId,
       user_mode: userMode || 'patient',
       user_id: userId,
+      conversation_history: conversationHistory || [],
     });
     return response.data;
   }

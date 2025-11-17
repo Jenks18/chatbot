@@ -22,22 +22,6 @@ export default function Home() {
   const [userMode, setUserMode] = useState<'patient' | 'doctor' | 'researcher'>('patient');
   const [loadingHistory, setLoadingHistory] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  
-  // Save messages to sessionStorage whenever they change
-  useEffect(() => {
-    if (messages.length > 0 && sessionId) {
-      sessionStorage.setItem(`chat_${sessionId}`, JSON.stringify(messages));
-      console.log('[SESSION] Saved', messages.length, 'messages to sessionStorage');
-    }
-  }, [messages, sessionId]);
-  
-  // Save user mode to sessionStorage whenever it changes
-  useEffect(() => {
-    if (sessionId) {
-      sessionStorage.setItem(`mode_${sessionId}`, userMode);
-      console.log('[SESSION] Saved mode:', userMode);
-    }
-  }, [userMode, sessionId]);
 
   useEffect(() => {
     // Check if session ID is in URL
@@ -49,26 +33,22 @@ export default function Home() {
       console.log('[SESSION] Found session in URL:', urlSessionId);
       setSessionId(urlSessionId);
       
-      // Try to load from sessionStorage first (instant)
-      const cachedMessages = sessionStorage.getItem(`chat_${urlSessionId}`);
-      if (cachedMessages) {
+      // Try to load from sessionStorage first (for page refresh persistence)
+      const cachedData = sessionStorage.getItem(`session_${urlSessionId}`);
+      if (cachedData) {
         try {
-          const parsed = JSON.parse(cachedMessages);
-          console.log('[SESSION] Restored', parsed.length, 'messages from sessionStorage');
-          setMessages(parsed.map((m: any) => ({
+          const { messages: cachedMessages, mode } = JSON.parse(cachedData);
+          console.log('[SESSION] Restored', cachedMessages.length, 'messages and mode:', mode);
+          setMessages(cachedMessages.map((m: any) => ({
             ...m,
             timestamp: new Date(m.timestamp)
           })));
+          if (mode) {
+            setUserMode(mode);
+          }
         } catch (e) {
-          console.error('[SESSION] Failed to parse cached messages:', e);
+          console.error('[SESSION] Failed to parse cached data:', e);
         }
-      }
-      
-      // Restore user mode
-      const cachedMode = sessionStorage.getItem(`mode_${urlSessionId}`);
-      if (cachedMode && (cachedMode === 'patient' || cachedMode === 'doctor' || cachedMode === 'researcher')) {
-        console.log('[SESSION] Restored mode:', cachedMode);
-        setUserMode(cachedMode as 'patient' | 'doctor' | 'researcher');
       }
       
       // Also try to load from database (may update with newer messages)
@@ -249,6 +229,13 @@ export default function Home() {
       content: message,
       timestamp: new Date(),
     };
+    
+    // Build conversation history from current messages
+    const conversationHistory = messages.map(msg => ({
+      role: msg.role,
+      content: msg.content
+    }));
+    
     setMessages((prev) => [...prev, userMessage]);
     setLoading(true);
 
@@ -257,7 +244,8 @@ export default function Home() {
         message, 
         currentSessionId, 
         userMode,
-        undefined // No user ID without Clerk
+        undefined, // No user ID without Clerk
+        conversationHistory // Send conversation history for AI memory
       );
 
       // Add assistant response with evidence
@@ -287,16 +275,25 @@ export default function Home() {
     }
   };
 
+  // Save messages and mode to sessionStorage for refresh persistence
+  useEffect(() => {
+    if (messages.length > 0 && sessionId) {
+      sessionStorage.setItem(`session_${sessionId}`, JSON.stringify({
+        messages,
+        mode: userMode
+      }));
+    }
+  }, [messages, sessionId, userMode]);
+
   const handleClearChat = () => {
     if (confirm('Are you sure you want to start a new chat?')) {
       console.log('[SESSION] Clearing chat and creating new session');
       if (sessionId) {
-        sessionStorage.removeItem(`chat_${sessionId}`);
-        sessionStorage.removeItem(`mode_${sessionId}`);
+        sessionStorage.removeItem(`session_${sessionId}`);
       }
       setMessages([]);
       setSessionId('');
-      setUserMode('patient'); // Reset to default
+      setUserMode('patient');
       window.history.pushState({}, '', '/');
     }
   };

@@ -33,46 +33,15 @@ class handler(BaseHTTPRequestHandler):
             if not user_message:
                 raise ValueError("Message is required")
             
-            # Get conversation history for context
-            conversation_history = []
-            try:
-                from backend.db.database import SessionLocal
-                from backend.db.models import ChatLog
-                
-                db = SessionLocal()
-                
-                # Fetch last 10 messages from this session for context
-                previous_messages = db.query(ChatLog).filter(
-                    ChatLog.session_id == session_id
-                ).order_by(ChatLog.created_at.desc()).limit(10).all()
-                
-                print(f"[HISTORY] Found {len(previous_messages)} previous messages in database")
-                
-                # Reverse to get chronological order
-                previous_messages = list(reversed(previous_messages))
-                
-                # Build conversation history
-                for msg in previous_messages:
-                    conversation_history.append({
-                        "role": "user",
-                        "content": msg.question
-                    })
-                    conversation_history.append({
-                        "role": "assistant",
-                        "content": msg.answer
-                    })
-                
-                db.close()
-                
-                if len(conversation_history) > 0:
-                    print(f"[HISTORY] Using {len(conversation_history)} messages for context")
-                else:
-                    print(f"[HISTORY] No previous messages found for session {session_id}")
-                    
-            except Exception as hist_error:
-                print(f"[HISTORY ERROR] Failed to load history: {hist_error}")
-                print(f"[HISTORY ERROR] Error type: {type(hist_error).__name__}")
-                # Continue without history if there's an error
+            # Get conversation history from request (frontend sends it)
+            conversation_history = data.get('conversation_history', [])
+            print(f"[MEMORY] Received {len(conversation_history)} messages from frontend")
+            
+            # Validate and clean conversation history
+            if conversation_history:
+                # Keep only last 20 messages to avoid token limits
+                conversation_history = conversation_history[-20:]
+                print(f"[MEMORY] Using {len(conversation_history)} messages for AI context")
             
             # Generate response using Groq with persona-based prompts
             # Run async function in sync context
