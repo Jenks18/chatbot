@@ -82,6 +82,7 @@ class handler(BaseHTTPRequestHandler):
                 from backend.db.database import SessionLocal
                 from backend.db.models import ChatLog, Session as SessionModel
                 from backend.services.geo_service import geo_service
+                from sqlalchemy import text
                 
                 print(f"[SAVE] Attempting to save chat to database for session: {session_id}")
                 db = SessionLocal()
@@ -99,9 +100,15 @@ class handler(BaseHTTPRequestHandler):
                 geo_data = None
                 
                 # Create or update session with location data
-                existing_session = db.query(SessionModel).filter(
-                    SessionModel.session_id == session_id
-                ).first()
+                # Query only existing columns (user_id may not exist)
+                try:
+                    existing_session = db.execute(
+                        text("SELECT id, session_id FROM sessions WHERE session_id = :sid LIMIT 1"),
+                        {"sid": session_id}
+                    ).fetchone()
+                except Exception as query_err:
+                    print(f"[SAVE] Session query failed: {query_err}")
+                    existing_session = None
                 
                 if not existing_session:
                     new_session = SessionModel(
