@@ -65,7 +65,10 @@ class handler(BaseHTTPRequestHandler):
                 # Get overview statistics
                 total_queries = db.query(func.count(ChatLog.id)).scalar() or 0
                 unique_sessions = db.query(func.count(func.distinct(ChatLog.session_id))).scalar() or 0
-                avg_response_time = db.query(func.avg(ChatLog.response_time_ms)).scalar() or 0
+                avg_response_time = db.query(func.avg(ChatLog.response_time_ms)).scalar()
+                
+                # Convert Decimal to float for JSON serialization
+                avg_response_time = float(avg_response_time) if avg_response_time else 0.0
                 
                 week_ago = datetime.utcnow() - timedelta(days=7)
                 daily_queries = db.query(
@@ -74,10 +77,10 @@ class handler(BaseHTTPRequestHandler):
                 ).filter(ChatLog.created_at >= week_ago).group_by(func.date(ChatLog.created_at)).all()
                 
                 response = {
-                    "total_queries": total_queries,
-                    "unique_sessions": unique_sessions,
+                    "total_queries": int(total_queries),
+                    "unique_sessions": int(unique_sessions),
                     "avg_response_time_ms": round(avg_response_time, 2),
-                    "daily_queries": [{"date": str(date), "count": count} for date, count in daily_queries]
+                    "daily_queries": [{"date": str(date), "count": int(count)} for date, count in daily_queries]
                 }
             
             elif '/api/admin/sessions/' in self.path and '/history' in self.path:
