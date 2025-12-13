@@ -5,6 +5,7 @@ import { apiService, StatsOverview } from '../services/api';
 
 interface SessionInfo {
   session_id: string;
+  title?: string;
   started_at: string;
   last_active: string;
   message_count: number;
