@@ -31,7 +31,14 @@ CRITICAL URL FORMATS (use these EXACT patterns):
 - NIH/NLM: https://www.ncbi.nlm.nih.gov/books/[ID]/
 - DOI: https://doi.org/[DOI] (e.g., https://doi.org/10.1056/NEJMra1807061)
 
-⚠️ CRITICAL: All reference fields (authors, title, journal, year, PMID, DOI, URL) MUST match the SAME actual source. If PMID is 31167055, then authors MUST be "Finnerup, N. B.", title MUST be "Nonnarcotic Methods of Pain Management", journal MUST be "The New England Journal of Medicine", year MUST be 2019. DO NOT mix metadata from different sources. VERIFY each PMID corresponds to the authors/title you provide.
+⚠️ CRITICAL REFERENCE RULES - NEVER VIOLATE:
+1. ONLY cite sources you KNOW are real and accurate
+2. If you cite PMID 31167055, the ONLY valid metadata is: Finnerup, N. B. (2019). Nonnarcotic Methods of Pain Management. The New England Journal of Medicine.
+3. DO NOT make up fake titles, authors, or journals to match a PMID
+4. If you don't know the exact reference details, use fewer citations rather than hallucinating
+5. Each PMID has ONE correct title/authors/journal - they cannot be changed
+6. VERIFY: Is this a real PubMed article? Does the title match the PMID? Do the authors match?
+7. When in doubt, cite only well-known sources like FDA drug labels or major review articles you're certain about
 
 FORMATTING RULES:
 1. Write in flowing, professional paragraphs - NO bullet points, NO emojis, NO markdown
@@ -70,7 +77,14 @@ CRITICAL URL FORMATS (use these EXACT patterns):
 - Clinical trials: https://clinicaltrials.gov/study/[NCT-ID]
 - DOI links: https://doi.org/[DOI]
 
-⚠️ CRITICAL: All reference metadata (authors, title, journal, year, PMID, DOI, URL) MUST belong to the SAME actual publication. Never mix authors from one paper with a PMID from another. Each PMID has only ONE correct set of authors/title/journal/year. VERIFY accuracy.
+⚠️ CRITICAL REFERENCE RULES - NEVER VIOLATE:
+1. ONLY cite real, verified sources - NO hallucinated references
+2. Each PMID has exactly ONE correct title, ONE set of authors, ONE journal
+3. If citing PMID 31167055: ONLY valid metadata is Finnerup NB, NEJM 2019, "Nonnarcotic Methods of Pain Management"
+4. DO NOT invent fake metadata to fill reference fields
+5. Better to have 3 accurate citations than 8 fake ones
+6. VERIFY: Does this PMID actually exist? Does the title match what I'm claiming?
+7. Use only sources you're absolutely certain about - major trials, FDA labels, landmark papers
 
 [3] Food and Drug Administration. (2024). Acetaminophen Information. Food and Drug Administration. https://www.fda.gov/drugs/information-drug-class/acetaminophen
 
@@ -109,7 +123,14 @@ CRITICAL URL FORMATS (use these EXACT patterns):
 - ClinicalTrials: https://clinicaltrials.gov/study/[NCT-ID]
 - DrugBank: https://go.drugbank.com/drugs/[DB-ID]
 
-⚠️ CRITICAL: All reference metadata MUST match the SAME source. PMID 31167055 = Finnerup 2019 NEJM paper. DO NOT create fake metadata. Each PMID has specific authors/title/journal that cannot be changed. VERIFY every reference is accurate.
+⚠️ CRITICAL REFERENCE RULES - NEVER VIOLATE:
+1. ZERO TOLERANCE for hallucinated or fake references
+2. Each PMID is locked to specific metadata: PMID 31167055 = Finnerup, N.B. (2019) "Nonnarcotic Methods of Pain Management" NEJM 380(25):2440-2448
+3. DO NOT invent authors, titles, or journals to match a PMID you don't know
+4. Prefer 3-4 verified citations over 6 uncertain ones
+5. If you cite a paper, you MUST know its exact title, authors, journal, and year
+6. Use landmark papers you're certain about: major RCTs, FDA approvals, Cochrane reviews
+7. VERIFY before citing: Is this real? Do all fields match the actual publication?
 
 Common adverse effects include headache, flushing, dyspepsia, nasal congestion, and transient visual disturbances, which are dose-dependent and generally well-tolerated.[2][5] Absolute contraindications include concurrent nitrate use due to potentially severe hypotension, and recent cardiovascular events within 6 months.[4]
 

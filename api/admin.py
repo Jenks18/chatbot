@@ -111,10 +111,30 @@ class handler(BaseHTTPRequestHandler):
                     db.close()
                     return
                 
-                # Get session info
-                session = db.query(SessionModel).filter(
-                    SessionModel.session_id == session_id
-                ).first()
+                # Get session info (query only existing columns)
+                try:
+                    session = db.query(
+                        SessionModel.id,
+                        SessionModel.session_id,
+                        SessionModel.user_agent,
+                        SessionModel.ip_address,
+                        SessionModel.country,
+                        SessionModel.city,
+                        SessionModel.region,
+                        SessionModel.timezone,
+                        SessionModel.latitude,
+                        SessionModel.longitude,
+                        SessionModel.started_at,
+                        SessionModel.last_active
+                    ).filter(
+                        SessionModel.session_id == session_id
+                    ).first()
+                except:
+                    # Fallback to raw SQL
+                    session = db.execute(
+                        text("SELECT id, session_id, user_agent, ip_address, country, city, region, timezone, latitude, longitude, started_at, last_active FROM sessions WHERE session_id = :sid LIMIT 1"),
+                        {"sid": session_id}
+                    ).fetchone()
                 
                 if not session:
                     response = {
