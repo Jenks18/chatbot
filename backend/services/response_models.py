@@ -41,52 +41,8 @@ class Reference(BaseModel):
         return citation
 
 
-class ContentSection(BaseModel):
-    """A section of content with proper formatting"""
-    heading: Optional[str] = Field(None, description="Section heading in plain text (no markdown)")
-    paragraphs: List[str] = Field(..., description="List of paragraphs, each as plain text with inline citations like [1], [2]")
-    bullet_points: Optional[List[str]] = Field(None, description="Optional bullet points as plain list items with inline citations")
-    
-    
-class StructuredResponse(BaseModel):
+class PatientResponse(BaseModel):
     """
-    Main response model ensuring clean, professional formatting
-    NO markdown symbols (**, ##, -, >, etc.)
-    Proper paragraphs and bullet lists
-    Working reference links
-    """
-    content_sections: List[ContentSection] = Field(
-        ..., 
-        description="Main content divided into logical sections with headings and paragraphs"
-    )
-    references: List[Reference] = Field(
-        ..., 
-        description="Complete list of references with working URLs, properly formatted"
-    )
-    tone: Literal["educational", "clinical", "research"] = Field(
-        ..., 
-        description="Response tone - educational for patients, clinical for doctors, research for scientists"
-    )
-    
-    def to_plain_text(self) -> str:
-        """Convert structured response to clean plain text"""
-        output = []
-        
-        for section in self.content_sections:
-            # Add heading if present (no markdown symbols)
-            if section.heading:
-                output.append(f"\n{section.heading}\n")
-            
-            # Add paragraphs
-            for para in section.paragraphs:
-                output.append(f"{para}\n")
-            
-            # Add bullet points with proper formatting
-            if section.bullet_points:
-                for bullet in section.bullet_points:
-                    output.append(f"  • {bullet}")
-                output.append("")  # Add spacing after bullets
-        
     Professional, paragraph-based response for general audience
     NO emojis, NO bullet points, NO markdown
     """
@@ -127,8 +83,13 @@ class StructuredResponse(BaseModel):
             output.append("")
             output.append("References:")
             for ref in self.references:
-                output.append(f"[{ref.number}] {ref.format_citation()
-            for point in self.key_points:
+                output.append(f"[{ref.number}] {ref.format_citation()}")
+        
+        return "\n".join(output)
+
+
+class ClinicalResponse(BaseModel):
+    """
     Professional clinical response in paragraph format
     NO bullet points unless absolutely critical for safety warnings
     """
@@ -167,13 +128,15 @@ class StructuredResponse(BaseModel):
         # Add references
         if self.references:
             output.append("")
-            output.append("ext format"""
-        output = [self.clinical_summary, "\n"]
+            output.append("References:")
+            for ref in self.references:
+                output.append(f"[{ref.number}] {ref.format_citation()}")
         
-        if self.safety_considerations:
-            output.append("\nSafety Considerations:")
-            for item in self.safety_considerations:
-                output.append(f"  • {item}")
+        return "\n".join(output)
+
+
+class ResearchResponse(BaseModel):
+    """
     Dense, technical research analysis in paragraph format
     """
     paragraphs: List[str] = Field(
@@ -211,25 +174,7 @@ class StructuredResponse(BaseModel):
         # Add references
         if self.references:
             output.append("")
-            output.append("ndings or insights with citations"
-    )
-    references: List[Reference] = Field(
-        ..., 
-        description="Complete, properly formatted academic references with DOIs/PMIDs and URLs"
-    )
-    
-    def to_plain_text(self) -> str:
-        """Convert to clean text format"""
-        output = [self.analysis, "\n"]
-        
-        if self.key_findings:
-            output.append("\nKey Findings:")
-            for finding in self.key_findings:
-                output.append(f"  • {finding}")
-            output.append("")
-        
-        if self.references:
-            output.append("\nReferences:")
+            output.append("References:")
             for ref in self.references:
                 output.append(f"[{ref.number}] {ref.format_citation()}")
         
