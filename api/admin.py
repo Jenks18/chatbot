@@ -21,7 +21,7 @@ class handler(BaseHTTPRequestHandler):
             
             # Import database
             from backend.db.database import SessionLocal
-            from backend.db.models import ChatLog, Session as SessionModel, Interaction
+            from backend.db.models import ChatLog, Session as SessionModel
             from sqlalchemy import func, desc, text
             
             db = SessionLocal()
@@ -236,25 +236,6 @@ class handler(BaseHTTPRequestHandler):
                     })
                 
                 response = result
-            
-            elif '/api/admin/interactions' in self.path:
-                # Get interactions
-                limit = int(query_params.get('limit', [100])[0])
-                
-                interactions = db.query(Interaction).limit(limit).all()
-                response = [
-                    {
-                        "id": i.id,
-                        "drug_name": i.drug_name,
-                        "title": i.title,
-                        "summary": i.summary,
-                        "mechanism": i.mechanism,
-                        "food_groups": i.food_groups,
-                        "recommended_actions": i.recommended_actions,
-                        "evidence_quality": i.evidence_quality
-                    }
-                    for i in interactions
-                ]
             
             else:
                 response = {"error": "Unknown endpoint"}

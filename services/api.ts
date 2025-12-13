@@ -155,21 +155,6 @@ class ApiService {
     return response.data;
   }
 
-  // Interaction management
-  async getInteractions(limit: number = 100): Promise<any[]> {
-    const response = await axios.get(this.buildEndpoint('/api/admin/interactions'), {
-      params: { limit },
-    });
-    return response.data;
-  }
-
-  async runFetchReferences(limit: number = 100): Promise<any> {
-    const response = await axios.post(this.buildEndpoint('/api/admin/pipeline/fetch-references'), null, {
-      params: { limit },
-    });
-    return response.data;
-  }
-
   async getSessionHistory(sessionId: string): Promise<any> {
     const response = await axios.get(this.buildEndpoint(`/api/admin/sessions/${sessionId}/history`));
     return response.data;

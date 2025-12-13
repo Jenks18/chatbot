@@ -45,19 +45,39 @@ export default function Admin() {
   const [stats, setStats] = useState<StatsOverview | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedSession, setSelectedSession] = useState<SessionHistory | null>(null);
-  const [interactions, setInteractions] = useState<any[]>([]);
-  const [pipelineResult, setPipelineResult] = useState<any | null>(null);
   const [activeTab, setActiveTab] = useState<'sessions' | 'stats'>('sessions');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [password, setPassword] = useState('');
+  const [authError, setAuthError] = useState('');
 
-  const loadInteractions = useCallback(async () => {
-    try {
-      const data = await apiService.getInteractions(200);
-      setInteractions(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error('Failed to load interactions', err);
-      setInteractions([]);
+  // Check if already authenticated on mount
+  useEffect(() => {
+    const auth = sessionStorage.getItem('admin_auth');
+    if (auth === 'true') {
+      setIsAuthenticated(true);
     }
   }, []);
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Check password against environment variable or hardcoded value
+    const correctPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'admin123';
+    
+    if (password === correctPassword) {
+      sessionStorage.setItem('admin_auth', 'true');
+      setIsAuthenticated(true);
+      setAuthError('');
+    } else {
+      setAuthError('Incorrect password');
+      setPassword('');
+    }
+  };
+
+  const handleLogout = () => {
+    sessionStorage.removeItem('admin_auth');
+    setIsAuthenticated(false);
+    setPassword('');
+  };
 
   // Load data on mount
   useEffect(() => {
@@ -76,7 +96,6 @@ export default function Admin() {
         
         setSessions(validSessions);
         setStats(statsData || null);
-        await loadInteractions();
       } catch (error) {
         console.error('Failed to load admin data:', error);
         setSessions([]);
@@ -86,8 +105,10 @@ export default function Admin() {
       }
     };
     
-    loadData();
-  }, [loadInteractions]);
+    if (isAuthenticated) {
+      loadData();
+    }
+  }, [isAuthenticated]);
 
   const refreshData = useCallback(async () => {
     
@@ -104,7 +125,6 @@ export default function Admin() {
       
       setSessions(validSessions);
       setStats(statsData || null);
-      await loadInteractions();
     } catch (error) {
       console.error('Failed to load admin data:', error);
       setSessions([]);
@@ -112,19 +132,7 @@ export default function Admin() {
     } finally {
       setLoading(false);
     }
-  }, [loadInteractions]);
-
-  const runPipeline = useCallback(async () => {
-    try {
-      setPipelineResult(null);
-      const res = await apiService.runFetchReferences(200);
-      setPipelineResult(res);
-      // reload interactions to show excerpts
-      await loadInteractions();
-    } catch (err) {
-      console.error('Pipeline failed', err);
-    }
-  }, [loadInteractions]);
+  }, []);
 
   const loadSessionHistory = useCallback(async (sessionId: string) => {
     try {
@@ -162,6 +170,69 @@ export default function Admin() {
     return `${hours}h ${minutes % 60}m`;
   };
 
+  // Show login form if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <>
+        <Head>
+          <title>Admin Login - Kandih ToxWiki</title>
+          <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        </Head>
+
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 max-w-md w-full">
+            <div className="text-center mb-6">
+              <span className="text-5xl">🧬</span>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white mt-4">
+                Admin Dashboard
+              </h1>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                Enter password to access
+              </p>
+            </div>
+            
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  id="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-toxgreen-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  placeholder="Enter admin password"
+                  autoFocus
+                />
+              </div>
+              
+              {authError && (
+                <div className="text-red-600 dark:text-red-400 text-sm">
+                  {authError}
+                </div>
+              )}
+              
+              <button
+                type="submit"
+                className="w-full px-4 py-2 bg-toxgreen-600 text-white rounded-lg hover:bg-toxgreen-700 font-medium"
+              >
+                Login
+              </button>
+              
+              <Link
+                href="/"
+                className="block text-center text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+              >
+                ← Back to Chat
+              </Link>
+            </form>
+          </div>
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
       <Head>
@@ -179,7 +250,7 @@ export default function Admin() {
                   Kandih ToxWiki — Admin Dashboard
                 </h1>
                 <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 line-clamp-1">
-                  Manage conversations, interactions, and reference data
+                  Manage conversations and analytics
                 </p>
               </div>
             </div>
@@ -194,13 +265,10 @@ export default function Admin() {
                 Refresh
               </button>
               <button
-                onClick={runPipeline}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium flex items-center gap-2"
+                onClick={handleLogout}
+                className="px-3 sm:px-4 py-1.5 sm:py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-xs sm:text-sm font-medium"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M8 12l4-4 4 4M12 8v8" />
-                </svg>
-                Fetch & Update References
+                Logout
               </button>
               <Link
                 href="/"
@@ -292,49 +360,6 @@ export default function Admin() {
                         </div>
                       </div>
                     ))
-                  )}
-                </div>
-              )}
-
-              {activeTab === 'stats' && (
-                <div className="mb-8">
-                  <h3 className="text-lg font-semibold mb-3">Manage Interactions</h3>
-                  <div className="grid gap-4">
-                    {interactions && interactions.length > 0 ? (
-                      interactions.map((it) => (
-                        <div key={it.id} className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <div className="font-semibold">{it.title || it.drug_name}</div>
-                              <div className="text-xs text-gray-500 dark:text-gray-400">Drug: {it.drug_name}</div>
-                              <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">{it.summary}</p>
-                            </div>
-                            <div className="text-right">
-                              <div className="text-xs text-gray-500">Evidence: {it.evidence_quality}</div>
-                              <div className="mt-2">
-                                {it.references && it.references.length > 0 && it.references.map((r: any) => (
-                                  <div key={r.id} className="text-xs">
-                                    <a href={r.url} target="_blank" rel="noreferrer" className="text-indigo-600 hover:underline">{r.title}</a>
-                                    {r.excerpt && <div className="text-gray-500 text-xs mt-1 max-w-xs">{r.excerpt.slice(0,140)}{r.excerpt.length>140? '…':''}</div>}
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                        No interactions found
-                      </div>
-                    )}
-                  </div>
-
-                  {pipelineResult && (
-                    <div className="mt-6 bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-                      <div className="font-medium">Pipeline Result</div>
-                      <pre className="text-xs mt-2 text-gray-600 dark:text-gray-300">{JSON.stringify(pipelineResult, null, 2)}</pre>
-                    </div>
                   )}
                 </div>
               )}
