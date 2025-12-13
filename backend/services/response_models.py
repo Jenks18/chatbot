@@ -17,7 +17,7 @@ class Reference(BaseModel):
     pages: Optional[str] = Field(None, description="Page range: '2440-2448' or article number: 'e2022897'")
     doi: Optional[str] = Field(None, description="DOI in format: '10.1056/NEJMra1807061'")
     pmid: Optional[str] = Field(None, description="PubMed ID number only: '31167055'")
-    url: str = Field(..., description="REQUIRED: Full working URL - PubMed link https://pubmed.ncbi.nlm.nih.gov/[PMID]/ or official source URL")
+    url: str = Field(..., description="REQUIRED: Full working URL. Use these exact formats: PubMed articles: https://pubmed.ncbi.nlm.nih.gov/[PMID]/ | FDA drug info: https://www.fda.gov/drugs/information-drug-class/[drug-name-lowercase] | DailyMed labels: https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=[SETID] | NIH: https://www.ncbi.nlm.nih.gov/... | Journal DOIs: https://doi.org/[DOI]")
     
     def format_citation(self) -> str:
         """Format reference in APA style with URL"""
