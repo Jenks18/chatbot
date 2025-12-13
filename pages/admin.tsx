@@ -266,7 +266,7 @@ export default function Admin() {
                               <span className="text-2xl">💬</span>
                               <div>
                                 <h3 className="font-semibold text-gray-900 dark:text-white">
-                                  Conversation #{session.session_id?.slice(0, 8) || 'unknown'}
+                                  {session.title || `Conversation #${session.session_id?.slice(0, 8) || 'unknown'}`}
                                 </h3>
                                 <p className="text-sm text-gray-600 dark:text-gray-400">
                                   {session.message_count} message{session.message_count !== 1 ? 's' : ''}

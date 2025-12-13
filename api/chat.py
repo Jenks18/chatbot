@@ -59,15 +59,35 @@ class handler(BaseHTTPRequestHandler):
             }
             max_tokens = token_limits.get(user_mode, 1400)
             
-            ai_response = loop.run_until_complete(
-                model_service.generate_response(
-                    query=user_message,
-                    user_mode=user_mode,
-                    max_tokens=max_tokens,
-                    temperature=0.7,
-                    conversation_history=conversation_history  # Pass history for context
+            # Track if this is the first message in a session
+            is_first_message = len(conversation_history) == 0
+            
+            # Variables for tracking request status
+            ai_response = None
+            request_status = 'success'
+            error_details = None
+            
+            try:
+                ai_response = loop.run_until_complete(
+                    model_service.generate_response(
+                        query=user_message,
+                        user_mode=user_mode,
+                        max_tokens=max_tokens,
+                        temperature=0.7,
+                        conversation_history=conversation_history  # Pass history for context
+                    )
                 )
-            )
+            except Exception as ai_error:
+                # Track the error but we'll still save to database
+                error_str = str(ai_error)
+                if '429' in error_str or 'rate limit' in error_str.lower():
+                    request_status = 'rate_limited'
+                    ai_response = "Sorry, I've reached my rate limit. Please try again in a moment."
+                else:
+                    request_status = 'error'
+                    ai_response = f"Sorry, I encountered an error: {error_str}"
+                error_details = error_str
+                print(f"[AI ERROR] {request_status}: {error_str}")
             
             # No consumer_summary needed - using three-tier persona system
             
@@ -110,9 +130,23 @@ class handler(BaseHTTPRequestHandler):
                     print(f"[SAVE] Session query failed: {query_err}")
                     existing_session = None
                 
+                # Generate title for new sessions from first message
+                chat_title = None
+                if not existing_session and is_first_message:
+                    # Generate a short title from the question
+                    chat_title = user_message[:50].strip()
+                    if len(user_message) > 50:
+                        # Find last complete word
+                        last_space = chat_title.rfind(' ')
+                        if last_space > 20:  # Keep at least 20 chars
+                            chat_title = chat_title[:last_space]
+                        chat_title += "..."
+                    print(f"[SAVE] Generated title for new session: {chat_title}")
+                
                 if not existing_session:
                     new_session = SessionModel(
                         session_id=session_id,
+                        title=chat_title,
                         user_agent=user_agent,
                         ip_address=client_ip,
                         city=geo_data.get("city") if geo_data else None,
@@ -125,13 +159,12 @@ class handler(BaseHTTPRequestHandler):
                 else:
                     # Update last_active and location data if not already set
                     from sqlalchemy import func
-                    existing_session.last_active = func.now()
-                    if geo_data and not existing_session.city:
-                        existing_session.city = geo_data.get("city")
-                        existing_session.region = geo_data.get("region")
-                        existing_session.country = geo_data.get("country")
-                        existing_session.latitude = geo_data.get("lat")
-                        existing_session.longitude = geo_data.get("lon")
+                    # Note: existing_session is a Row object from raw SQL, not ORM object
+                    # We need to update using raw SQL
+                    db.execute(
+                        text("UPDATE sessions SET last_active = NOW() WHERE session_id = :sid"),
+                        {"sid": session_id}
+                    )
                 
                 # Save chat log
                 # Extract references from response
@@ -153,6 +186,8 @@ class handler(BaseHTTPRequestHandler):
                     user_id=user_id,  # Store Clerk user ID
                     question=user_message,
                     answer=ai_response,
+                    status=request_status,  # success, rate_limited, error
+                    error_message=error_details,  # Error details if failed
                     model_used="groq/compound+free-apis",
                     response_time_ms=response_time_ms,
                     ip_address=client_ip,

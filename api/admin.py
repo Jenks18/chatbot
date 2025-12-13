@@ -116,6 +116,7 @@ class handler(BaseHTTPRequestHandler):
                     session = db.query(
                         SessionModel.id,
                         SessionModel.session_id,
+                        SessionModel.title,
                         SessionModel.user_agent,
                         SessionModel.ip_address,
                         SessionModel.country,
@@ -132,7 +133,7 @@ class handler(BaseHTTPRequestHandler):
                 except:
                     # Fallback to raw SQL
                     session = db.execute(
-                        text("SELECT id, session_id, user_agent, ip_address, country, city, region, timezone, latitude, longitude, started_at, last_active FROM sessions WHERE session_id = :sid LIMIT 1"),
+                        text("SELECT id, session_id, title, user_agent, ip_address, country, city, region, timezone, latitude, longitude, started_at, last_active FROM sessions WHERE session_id = :sid LIMIT 1"),
                         {"sid": session_id}
                     ).fetchone()
                 
@@ -190,6 +191,7 @@ class handler(BaseHTTPRequestHandler):
                     sessions = db.query(
                         SessionModel.id,
                         SessionModel.session_id,
+                        SessionModel.title,
                         SessionModel.user_agent,
                         SessionModel.ip_address,
                         SessionModel.country,
@@ -204,7 +206,7 @@ class handler(BaseHTTPRequestHandler):
                 except Exception as e:
                     # Fallback: try with raw SQL if model has issues
                     sessions = db.execute(
-                        text("SELECT id, session_id, user_agent, ip_address, country, city, region, timezone, latitude, longitude, started_at, last_active FROM sessions ORDER BY last_active DESC LIMIT :limit"),
+                        text("SELECT id, session_id, title, user_agent, ip_address, country, city, region, timezone, latitude, longitude, started_at, last_active FROM sessions ORDER BY last_active DESC LIMIT :limit"),
                         {"limit": limit}
                     ).fetchall()
                 
@@ -223,12 +225,13 @@ class handler(BaseHTTPRequestHandler):
                     
                     result.append({
                         "session_id": session_id,
-                        "started_at": str(session.started_at if hasattr(session, 'started_at') else session[11]),
-                        "last_active": str(session.last_active if hasattr(session, 'last_active') else session[12]),
+                        "title": session.title if hasattr(session, 'title') else session[2],
+                        "started_at": str(session.started_at if hasattr(session, 'started_at') else session[12]),
+                        "last_active": str(session.last_active if hasattr(session, 'last_active') else session[13]),
                         "message_count": message_count,
-                        "user_agent": (session.user_agent if hasattr(session, 'user_agent') else session[2]) or "",
-                        "country": session.country if hasattr(session, 'country') else session[4],
-                        "city": session.city if hasattr(session, 'city') else session[5],
+                        "user_agent": (session.user_agent if hasattr(session, 'user_agent') else session[3]) or "",
+                        "country": session.country if hasattr(session, 'country') else session[5],
+                        "city": session.city if hasattr(session, 'city') else session[6],
                         "first_message_preview": first_message.question[:100] if first_message else None
                     })
                 

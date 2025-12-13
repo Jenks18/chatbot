@@ -11,7 +11,9 @@ class ChatLog(Base):
     session_id = Column(String(100), nullable=False, index=True)
     user_id = Column(String(100), nullable=True)
     question = Column(Text, nullable=False)
-    answer = Column(Text, nullable=False)
+    answer = Column(Text, nullable=True)  # Can be null if request failed
+    status = Column(String(20), default='success')  # success, rate_limited, error
+    error_message = Column(Text, nullable=True)  # Error details if failed
     model_used = Column(String(50))
     response_time_ms = Column(Integer)
     ip_address = Column(String(50))  # Client IP address
@@ -25,6 +27,7 @@ class Session(Base):
     id = Column(Integer, primary_key=True, index=True)
     session_id = Column(String(100), unique=True, nullable=False, index=True)
     user_id = Column(String(100), nullable=True, index=True)  # Clerk user ID
+    title = Column(String(300), nullable=True)  # Chat title from first message
     user_agent = Column(Text)
     ip_address = Column(String(50))
     country = Column(String(100))  # Country from IP
