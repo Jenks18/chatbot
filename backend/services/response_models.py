@@ -141,15 +141,15 @@ class ResearchResponse(BaseModel):
     """
     paragraphs: List[str] = Field(
         ..., 
-        min_items=5,
-        max_items=10,
-        description="5-10 dense, technical paragraphs with advanced scientific terminology. Frequent inline citations [1-4]. Include quantitative data (IC50, HR, p-values). Structure: (1) Drug class overview/molecular target, (2) Detailed pharmacology/mechanism, (3) Clinical trial data/efficacy endpoints, (4) Safety profile with mechanistic basis, (5) Drug interactions/PK considerations, (6) Special populations/genetic polymorphisms, (7) Comparative effectiveness if relevant. NO bullet points."
+        min_items=4,
+        max_items=6,
+        description="4-6 dense, technical paragraphs with advanced scientific terminology. Frequent inline citations [1-4]. Include quantitative data (IC50, HR, p-values). Structure: (1) Drug class overview/molecular target, (2) Detailed pharmacology/mechanism, (3) Clinical trial data/efficacy endpoints, (4) Safety profile with mechanistic basis, (5) Optional: Drug interactions/PK considerations, (6) Optional: Special populations/genetic polymorphisms. NO bullet points."
     )
     references: List[Reference] = Field(
         ..., 
-        min_items=5,
-        max_items=20,
-        description="5-20 complete academic references in APA style. MUST include full author lists (or et al.), complete title, full journal name, year, volume(issue), pages, DOI, PMID, and PubMed URL."
+        min_items=4,
+        max_items=10,
+        description="4-10 complete academic references in APA style. MUST include full author lists (or et al.), complete title, full journal name, year, volume(issue), pages, DOI, PMID, and PubMed URL."
     )
     research_question: Optional[str] = Field(
         None, 

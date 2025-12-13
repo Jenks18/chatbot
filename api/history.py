@@ -1,5 +1,5 @@
 """
-Chat history endpoint for Vercel
+History endpoint for Vercel - retrieve chat history by session
 """
 from http.server import BaseHTTPRequestHandler
 import json
@@ -39,6 +39,15 @@ class handler(BaseHTTPRequestHandler):
             
             # Import database
             from backend.db.database import SessionLocal
+            from backend.db.models import ChatLog
+            
+            db = SessionLocal()
+            
+            # Query chat logs
+            logs = db.query(ChatLog).filter(
+                ChatLog.session_id == session_id
+            ).order_by(ChatLog.created_at.asc()).limit(limit).all()
+            
             print(f"[HISTORY] Found {len(logs)} chat logs for session {session_id}")
             
             # Format response
@@ -67,21 +76,18 @@ class handler(BaseHTTPRequestHandler):
                 "count": len(history)
             }
             
-            if db:
-                    for log in logs
-            ]
+            # Send response
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            self.wfile.write(json.dumps(response).encode())
             
-            response = {
-                "session_id": session_id,
-                "history": history,
-                "count": len(history)
-            }
-            # Close database connection if it exists
-            if db:
-                try:
-                    db.close()
-                except:
-                    pass
+        except Exception as e:
+            import traceback
+            error_details = traceback.format_exc()
+            print(f"[HISTORY ERROR] Failed to fetch history: {str(e)}")
+            print(f"[HISTORY ERROR] Traceback: {error_details}")
             
             error_response = {
                 "error": str(e),
@@ -91,26 +97,20 @@ class handler(BaseHTTPRequestHandler):
             }
             
             status_code = 400 if "Invalid" in str(e) or "required" in str(e) else 500
-            self.send_response(status_code
-            self.end_headers()
-            self.wfile.write(json.dumps(response).encode())
-            
-        except Exception as e:
-            import traceback
-            error_details = traceback.format_exc()
-            print(f"[ERROR] History endpoint failed: {str(e)}")
-            print(f"[ERROR] Traceback: {error_details}")
-            
-            error_response = {
-                "error": str(e),
-                "session_id": None,
-                "history": []
-            }
-            self.send_response(500 if "Invalid path" not in str(e) else 400)
+            self.send_response(status_code)
             self.send_header('Content-Type', 'application/json')
             self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
             self.wfile.write(json.dumps(error_response).encode())
+            
+        finally:
+            # Close database connection if it exists
+            if db:
+                try:
+                    db.close()
+                    print("[HISTORY] Database connection closed")
+                except Exception as close_error:
+                    print(f"[HISTORY] Failed to close database: {str(close_error)}")
     
     def do_OPTIONS(self):
         self.send_response(200)

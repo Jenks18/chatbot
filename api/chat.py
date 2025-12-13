@@ -51,11 +51,19 @@ class handler(BaseHTTPRequestHandler):
             start_time = datetime.now()
             
             # Generate persona-specific response with conversation history
+            # Mode-specific token allocation
+            token_limits = {
+                'patient': 1500,
+                'doctor': 1800,
+                'researcher': 2000
+            }
+            max_tokens = token_limits.get(user_mode, 1500)
+            
             ai_response = loop.run_until_complete(
                 model_service.generate_response(
                     query=user_message,
                     user_mode=user_mode,
-                    max_tokens=1200,  # Reduced to prevent "too large" errors
+                    max_tokens=max_tokens,
                     temperature=0.7,
                     conversation_history=conversation_history  # Pass history for context
                 )

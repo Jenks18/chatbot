@@ -29,15 +29,33 @@ interface ChatMessageProps {
 }
 
 const parseCitations = (text: string): { cleanText: string; citations: string[] } => {
-  const citationPattern = /\[(\d+)\]/g;
+  const citationPattern = /\[(\d+(?:-\d+)?)\]/g;
   const citations: string[] = [];
+  let cleanText = text;
   let match;
+  
+  // Extract all unique citations
   while ((match = citationPattern.exec(text)) !== null) {
-    if (!citations.includes(match[1])) {
-      citations.push(match[1]);
+    const citationRange = match[1];
+    // Handle ranges like [1-3] or single citations [1]
+    if (citationRange.includes('-')) {
+      const [start, end] = citationRange.split('-').map(Number);
+      for (let i = start; i <= end; i++) {
+        if (!citations.includes(String(i))) {
+          citations.push(String(i));
+        }
+      }
+    } else {
+      if (!citations.includes(citationRange)) {
+        citations.push(citationRange);
+      }
     }
   }
-  return { cleanText: text, citations };
+  
+  // Remove all citation markers from text
+  cleanText = text.replace(citationPattern, '');
+  
+  return { cleanText, citations };
 };
 
 const parseReferences = (text: string): Array<{ number: number; citation: string; url?: string; title?: string; authors?: string; journal?: string; year?: string }> => {
@@ -136,6 +154,9 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
   const contentWithoutRefs = removeReferencesSection(displayContent || '');
   const aiReferences = parseReferences(displayContent || '');
   
+  // Create unique message ID for reference anchors
+  const messageId = new Date(message.timestamp).getTime();
+  
   // Combine evidence-based references with AI-generated references
   const evidenceRefs = buildReferences();
   const allReferences = aiReferences.length > 0 
@@ -179,7 +200,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
                         {cleanText}
                         {citations.length > 0 && citations.map((citNum) => (
                           <sup key={citNum}>
-                            <a href={`#ref-${citNum}`} onClick={(e) => { e.preventDefault(); setShowReferences(true); setTimeout(() => { document.getElementById(`ref-${citNum}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100); }} className="citation-link">{citNum}</a>
+                            <a href={`#ref-${messageId}-${citNum}`} onClick={(e) => { e.preventDefault(); setShowReferences(true); setTimeout(() => { document.getElementById(`ref-${messageId}-${citNum}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100); }} className="citation-link">{citNum}</a>
                           </sup>
                         ))}
                       </p>
@@ -214,7 +235,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
                       const hasValidUrl = ref.url && ref.url !== '#';
                       
                       return (
-                        <div key={idx} id={`ref-${ref.number}`} className="reference-item bg-slate-800/30 rounded-lg p-4 border border-slate-700/50 hover:border-slate-600/50 transition-all">
+                        <div key={idx} id={`ref-${messageId}-${ref.number}`} className="reference-item bg-slate-800/30 rounded-lg p-4 border border-slate-700/50 hover:border-slate-600/50 transition-all">
                           <div className="flex items-start gap-3">
                             <span className="reference-number flex-shrink-0 bg-blue-600/20 text-blue-400 border border-blue-600/30 rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold">
                               {ref.number}
