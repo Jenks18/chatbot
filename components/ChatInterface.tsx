@@ -97,9 +97,9 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
     return paragraphs.map(p => p.replace(/\n/g, ' ').trim());
   };
 
-  const buildReferences = (): Array<{ number: number; title: string; url: string; excerpt?: string }> => {
+  const buildReferences = (): Array<{ number: number; title: string; url: string; excerpt?: string; authors?: string; journal?: string; year?: string; citation?: string }> => {
     if (!message.evidence || message.evidence.length === 0) return [];
-    const refs: Array<{ number: number; title: string; url: string; excerpt?: string }> = [];
+    const refs: Array<{ number: number; title: string; url: string; excerpt?: string; authors?: string; journal?: string; year?: string; citation?: string }> = [];
     let refNum = 1;
     message.evidence.forEach((ev) => {
       if (ev.references && ev.references.length > 0) {
@@ -109,6 +109,10 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
             title: r.title || r.url,
             url: r.url,
             excerpt: r.excerpt,
+            authors: r.authors,
+            journal: r.journal,
+            year: r.year,
+            citation: r.citation,
           });
         });
       } else {
@@ -117,6 +121,10 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
           title: ev.title || ev.drug_name || 'Evidence',
           url: '#',
           excerpt: ev.summary,
+          authors: undefined,
+          journal: undefined,
+          year: undefined,
+          citation: undefined,
         });
       }
     });
