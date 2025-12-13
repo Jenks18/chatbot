@@ -10,7 +10,17 @@ interface Message {
     title?: string;
     summary: string;
     evidence_quality?: string;
-    references?: Array<{ id: number; title: string; url: string; excerpt?: string; unverified?: boolean }>;
+    references?: Array<{ 
+      id: number; 
+      title: string; 
+      url: string; 
+      excerpt?: string; 
+      unverified?: boolean;
+      authors?: string;
+      journal?: string;
+      year?: string;
+      citation?: string;
+    }>;
   }>;
 }
 
@@ -30,20 +40,42 @@ const parseCitations = (text: string): { cleanText: string; citations: string[] 
   return { cleanText: text, citations };
 };
 
-const parseReferences = (text: string): Array<{ number: number; citation: string }> => {
+const parseReferences = (text: string): Array<{ number: number; citation: string; url?: string; title?: string; authors?: string; journal?: string; year?: string }> => {
   const referencesMatch = text.match(/References?:\s*\n([\s\S]+)$/i);
   if (!referencesMatch) return [];
   
   const referencesSection = referencesMatch[1];
   const lines = referencesSection.split('\n');
-  const references: Array<{ number: number; citation: string }> = [];
+  const references: Array<{ number: number; citation: string; url?: string; title?: string; authors?: string; journal?: string; year?: string }> = [];
   
   for (const line of lines) {
     const match = line.match(/^\[(\d+)\]\s*(.+)$/);
     if (match) {
+      const fullCitation = match[2].trim();
+      
+      // Extract URL from citation (look for http/https URLs)
+      const urlMatch = fullCitation.match(/(https?:\/\/[^\s]+)/);
+      const url = urlMatch ? urlMatch[1] : undefined;
+      
+      // Try to parse structured citation parts
+      // Format: Authors. Title. Journal. Year;Volume:Pages. PMID: XXX. URL
+      const parts = fullCitation.split(/\.\s+(?=[A-Z])/); // Split on ". " followed by capital letter
+      const authors = parts[0]?.trim();
+      const title = parts[1]?.trim();
+      const restParts = fullCitation.substring((authors?.length || 0) + (title?.length || 0) + 4);
+      const journalMatch = restParts.match(/^([^.]+)\./);
+      const journal = journalMatch ? journalMatch[1].trim() : undefined;
+      const yearMatch = fullCitation.match(/\b(19|20)\d{2}\b/);
+      const year = yearMatch ? yearMatch[0] : undefined;
+      
       references.push({
         number: parseInt(match[1]),
-        citation: match[2].trim()
+        citation: fullCitation,
+        url,
+        title,
+        authors,
+        journal,
+        year
       });
     }
   }
@@ -101,8 +133,12 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
   const allReferences = aiReferences.length > 0 
     ? aiReferences.map(ref => ({ 
         number: ref.number, 
-        title: ref.citation, 
-        url: '#', 
+        title: ref.title || ref.citation,
+        authors: ref.authors,
+        journal: ref.journal,
+        year: ref.year,
+        citation: ref.citation,
+        url: ref.url || '#', 
         excerpt: undefined 
       }))
     : evidenceRefs;
@@ -161,46 +197,87 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
                   </h3>
                   <div className="space-y-4">
                     {allReferences.map((ref, idx) => {
-                      // Parse citation to extract title, journal, year, etc.
-                      const citation = ref.title || '';
-                      
-                      // Try to extract structured parts from citation
-                      // Format examples:
-                      // "Smith et al. Journal Name. 2023;10(2):123-456. PMID: 12345"
-                      // "FDA Drug Label - Acetaminophen, Food and Drug Administration, 2024"
-                      const parts = citation.split(/[.,;]/);
-                      const mainTitle = parts[0]?.trim() || citation;
-                      const restOfCitation = parts.slice(1).join(', ').trim();
+                      // Use structured data if available, otherwise parse citation
+                      const hasStructuredData = ref.authors || ref.journal;
+                      const displayTitle = ref.title || ref.citation;
+                      const displayAuthors = ref.authors;
+                      const displayJournal = ref.journal;
+                      const displayYear = ref.year;
+                      const hasValidUrl = ref.url && ref.url !== '#';
                       
                       return (
-                        <div key={idx} id={`ref-${ref.number}`} className="reference-item">
+                        <div key={idx} id={`ref-${ref.number}`} className="reference-item bg-slate-800/30 rounded-lg p-4 border border-slate-700/50 hover:border-slate-600/50 transition-all">
                           <div className="flex items-start gap-3">
-                            <span className="reference-number">{ref.number}</span>
-                            <div className="flex-1">
-                              <div>
-                                {ref.url !== '#' ? (
-                                  <a href={ref.url} target="_blank" rel="noopener noreferrer" className="reference-title hover:text-blue-300 transition-colors">
-                                    {mainTitle}
+                            <span className="reference-number flex-shrink-0 bg-blue-600/20 text-blue-400 border border-blue-600/30 rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold">
+                              {ref.number}
+                            </span>
+                            <div className="flex-1 min-w-0">
+                              {/* Title/Main content */}
+                              <div className="mb-2">
+                                {hasValidUrl ? (
+                                  <a 
+                                    href={ref.url} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer" 
+                                    className="text-blue-400 hover:text-blue-300 transition-colors font-medium text-base inline-flex items-center gap-2 group"
+                                  >
+                                    <span>{displayTitle}</span>
+                                    <svg className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                    </svg>
                                   </a>
                                 ) : (
-                                  <div className="text-slate-200 font-semibold text-sm leading-relaxed">
-                                    {mainTitle}
+                                  <div className="text-slate-200 font-medium text-base">
+                                    {displayTitle}
                                   </div>
                                 )}
                               </div>
-                              {restOfCitation && (
+                              
+                              {/* Structured metadata */}
+                              {hasStructuredData && (
+                                <div className="text-sm text-slate-400 space-y-1">
+                                  {displayAuthors && (
+                                    <div className="flex items-start gap-2">
+                                      <span className="text-slate-500 font-medium min-w-[60px]">Authors:</span>
+                                      <span>{displayAuthors}</span>
+                                    </div>
+                                  )}
+                                  {displayJournal && (
+                                    <div className="flex items-start gap-2">
+                                      <span className="text-slate-500 font-medium min-w-[60px]">Source:</span>
+                                      <span className="italic">{displayJournal}</span>
+                                      {displayYear && <span className="ml-1">({displayYear})</span>}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                              
+                              {/* Full citation if not parsed */}
+                              {!hasStructuredData && ref.citation && ref.citation !== displayTitle && (
                                 <p className="text-sm text-slate-400 mt-2 leading-relaxed">
-                                  {restOfCitation}
+                                  {ref.citation}
                                 </p>
                               )}
+                              
+                              {/* Excerpt if available */}
                               {ref.excerpt && (
-                                <p className="text-sm text-slate-400 mt-2 leading-relaxed italic">
-                                  {ref.excerpt}
+                                <p className="text-sm text-slate-400 mt-2 leading-relaxed italic border-l-2 border-slate-600 pl-3">
+                                  "{ref.excerpt}"
                                 </p>
                               )}
-                              {ref.url !== '#' && (
-                                <div className="text-xs text-slate-500 mt-2 break-all font-mono">
-                                  {ref.url}
+                              
+                              {/* URL display */}
+                              {hasValidUrl && (
+                                <div className="mt-3 pt-2 border-t border-slate-700/50">
+                                  <a 
+                                    href={ref.url} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="text-xs text-slate-500 hover:text-blue-400 transition-colors break-all font-mono flex items-center gap-1"
+                                  >
+                                    <span>🔗</span>
+                                    <span>{ref.url}</span>
+                                  </a>
                                 </div>
                               )}
                             </div>
