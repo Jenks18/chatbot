@@ -71,6 +71,11 @@ class handler(BaseHTTPRequestHandler):
             self.wfile.write(json.dumps(response).encode())
             
         except Exception as e:
+            import traceback
+            error_details = traceback.format_exc()
+            print(f"[ERROR] History endpoint failed: {str(e)}")
+            print(f"[ERROR] Traceback: {error_details}")
+            
             error_response = {
                 "error": str(e),
                 "session_id": None,

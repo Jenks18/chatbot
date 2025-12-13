@@ -190,10 +190,15 @@ class handler(BaseHTTPRequestHandler):
             self.wfile.write(json.dumps(response).encode())
             
         except Exception as e:
+            import traceback
+            error_details = traceback.format_exc()
+            print(f"[ERROR] Chat endpoint failed: {str(e)}")
+            print(f"[ERROR] Traceback: {error_details}")
+            
             error_response = {
                 "error": str(e),
                 "answer": f"Sorry, I encountered an error: {str(e)}",
-                "session_id": data.get('session_id', 'error'),
+                "session_id": data.get('session_id', 'error') if 'data' in locals() else 'error',
                 "model_used": "error",
                 "response_time_ms": 0
             }
