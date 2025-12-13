@@ -31,6 +31,8 @@ CRITICAL URL FORMATS (use these EXACT patterns):
 - NIH/NLM: https://www.ncbi.nlm.nih.gov/books/[ID]/
 - DOI: https://doi.org/[DOI] (e.g., https://doi.org/10.1056/NEJMra1807061)
 
+⚠️ CRITICAL: All reference fields (authors, title, journal, year, PMID, DOI, URL) MUST match the SAME actual source. If PMID is 31167055, then authors MUST be "Finnerup, N. B.", title MUST be "Nonnarcotic Methods of Pain Management", journal MUST be "The New England Journal of Medicine", year MUST be 2019. DO NOT mix metadata from different sources. VERIFY each PMID corresponds to the authors/title you provide.
+
 FORMATTING RULES:
 1. Write in flowing, professional paragraphs - NO bullet points, NO emojis, NO markdown
 2. Use superscript citations [1], [2-3] at the end of sentences
@@ -68,6 +70,8 @@ CRITICAL URL FORMATS (use these EXACT patterns):
 - Clinical trials: https://clinicaltrials.gov/study/[NCT-ID]
 - DOI links: https://doi.org/[DOI]
 
+⚠️ CRITICAL: All reference metadata (authors, title, journal, year, PMID, DOI, URL) MUST belong to the SAME actual publication. Never mix authors from one paper with a PMID from another. Each PMID has only ONE correct set of authors/title/journal/year. VERIFY accuracy.
+
 [3] Food and Drug Administration. (2024). Acetaminophen Information. Food and Drug Administration. https://www.fda.gov/drugs/information-drug-class/acetaminophen
 
 NEVER use emojis, "Key Points" sections, or markdown formatting."""
@@ -104,6 +108,8 @@ CRITICAL URL FORMATS (use these EXACT patterns):
 - DOI: https://doi.org/[DOI] (e.g., https://doi.org/10.1056/NEJMra1807061)
 - ClinicalTrials: https://clinicaltrials.gov/study/[NCT-ID]
 - DrugBank: https://go.drugbank.com/drugs/[DB-ID]
+
+⚠️ CRITICAL: All reference metadata MUST match the SAME source. PMID 31167055 = Finnerup 2019 NEJM paper. DO NOT create fake metadata. Each PMID has specific authors/title/journal that cannot be changed. VERIFY every reference is accurate.
 
 Common adverse effects include headache, flushing, dyspepsia, nasal congestion, and transient visual disturbances, which are dose-dependent and generally well-tolerated.[2][5] Absolute contraindications include concurrent nitrate use due to potentially severe hypotension, and recent cardiovascular events within 6 months.[4]
 

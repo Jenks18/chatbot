@@ -95,15 +95,15 @@ class ClinicalResponse(BaseModel):
     """
     paragraphs: List[str] = Field(
         ..., 
-        min_items=4,
-        max_items=7,
-        description="4-7 clinical paragraphs using appropriate medical terminology. Inline citations [1], [2-4] at sentence ends. Structure: (1) Clinical overview/drug class, (2) Mechanism of action with pharmacology, (3) Dosing/administration/efficacy, (4) Safety profile and adverse effects, (5) Drug interactions if relevant, (6) Special populations if applicable. NO bullet points - integrate all information into flowing prose."
+        min_items=3,
+        max_items=5,
+        description="3-5 clinical paragraphs using appropriate medical terminology. Inline citations [1], [2-4] at sentence ends. Structure: (1) Clinical overview/drug class, (2) Mechanism of action with pharmacology, (3) Dosing/administration/efficacy, (4) Safety profile and adverse effects, (5) Optional: Special considerations. NO bullet points - integrate all information into flowing prose."
     )
     references: List[Reference] = Field(
         ..., 
-        min_items=4,
-        max_items=15,
-        description="4-15 complete APA-style clinical references with PubMed URLs. Must include authors, title, journal, year, volume/pages, PMID, DOI, and URL."
+        min_items=3,
+        max_items=8,
+        description="3-8 complete APA-style clinical references with PubMed URLs. Must include authors, title, journal, year, volume/pages, PMID, DOI, and URL."
     )
     clinical_question: Optional[str] = Field(
         None, 
@@ -141,15 +141,15 @@ class ResearchResponse(BaseModel):
     """
     paragraphs: List[str] = Field(
         ..., 
-        min_items=4,
-        max_items=6,
-        description="4-6 dense, technical paragraphs with advanced scientific terminology. Frequent inline citations [1-4]. Include quantitative data (IC50, HR, p-values). Structure: (1) Drug class overview/molecular target, (2) Detailed pharmacology/mechanism, (3) Clinical trial data/efficacy endpoints, (4) Safety profile with mechanistic basis, (5) Optional: Drug interactions/PK considerations, (6) Optional: Special populations/genetic polymorphisms. NO bullet points."
+        min_items=3,
+        max_items=5,
+        description="3-5 dense, technical paragraphs with advanced scientific terminology. Frequent inline citations [1-4]. Include quantitative data (IC50, HR, p-values). Structure: (1) Drug class overview/molecular target, (2) Detailed pharmacology/mechanism, (3) Clinical trial data/efficacy endpoints, (4) Safety profile with mechanistic basis, (5) Optional: Special considerations. NO bullet points."
     )
     references: List[Reference] = Field(
         ..., 
-        min_items=4,
-        max_items=10,
-        description="4-10 complete academic references in APA style. MUST include full author lists (or et al.), complete title, full journal name, year, volume(issue), pages, DOI, PMID, and PubMed URL."
+        min_items=3,
+        max_items=6,
+        description="3-6 complete academic references in APA style. MUST include full author lists (or et al.), complete title, full journal name, year, volume(issue), pages, DOI, PMID, and PubMed URL."
     )
     research_question: Optional[str] = Field(
         None, 
